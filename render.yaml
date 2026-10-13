@@ -1,0 +1,32 @@
+services:
+  # FastAPI High-Performance Backend
+  - type: web
+    name: wealthcraft-backend
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install -r backend/requirements.txt && python database/populate_all_market_assets.py"
+    startCommand: "uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./stockify.db
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "11520"
+
+  # Next.js 15 Full-Stack Frontend
+  - type: web
+    name: wealthcraft-frontend
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: frontend
+    buildCommand: "npm install && npm run build"
+    startCommand: "npm run start"
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: wealthcraft-backend
+          property: host
