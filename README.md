@@ -11,6 +11,13 @@
 [![SQLite / PostgreSQL](https://img.shields.io/badge/Database-SQLAlchemy-4479A1?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlalchemy.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
+<br/>
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FSakshamSuper%2FWealthCraft-AI&root-directory=frontend)
+&nbsp;&nbsp;
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/SakshamSuper/WealthCraft-AI)
+
+
 <p align="center">
   <b>WealthCraft AI</b> is an enterprise-grade wealth advisory, multi-asset screening, and quantitative portfolio optimization suite. Engineered with an ultra-modern aesthetic inspired by <b>Groww, Zerodha, and Morningstar</b>, WealthCraft unites real-time Indian stock exchange feeds (NSE/BSE), constituent index impact matrices from <b>Dhan.co</b>, machine learning valuation forecasts, and an agentic RAG financial orchestrator.
 </p>
