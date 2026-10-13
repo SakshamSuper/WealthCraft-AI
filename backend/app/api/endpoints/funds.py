@@ -279,7 +279,11 @@ def read_funds(
             aum=lf.aum,
             risk_category=lf.risk_category,
             is_custom=False,
-            ticker=getattr(lf, "ticker", None)
+            ticker=getattr(lf, "ticker", None),
+            pe_ratio=getattr(lf, "pe_ratio", None),
+            sector=getattr(lf, "sector", None),
+            high_52w=getattr(lf, "high_52w", None),
+            low_52w=getattr(lf, "low_52w", None)
         ))
         
     # 2. Query public APIs if search text is active
@@ -475,6 +479,46 @@ def read_fund(fund_id: int, db: Session = Depends(get_db)) -> Any:
         db.commit()
         db.refresh(fund)
     return fund
+
+@router.get("/{fund_id}/peers")
+def get_fund_peers(fund_id: int, db: Session = Depends(get_db)) -> Any:
+    """
+    Get peers in the same sector or asset category for comparison.
+    """
+    fund = crud.get_mutual_fund_by_id(db, fund_id=fund_id)
+    if not fund:
+        raise HTTPException(status_code=404, detail="Fund not found")
+
+    peers_query = db.query(MutualFund).filter(
+        MutualFund.id != fund_id,
+        MutualFund.category == fund.category
+    )
+    if fund.sector:
+        peers = peers_query.filter(MutualFund.sector == fund.sector).limit(5).all()
+        if len(peers) < 2:
+            peers = db.query(MutualFund).filter(
+                MutualFund.id != fund_id,
+                MutualFund.category == fund.category
+            ).limit(5).all()
+    else:
+        peers = peers_query.limit(5).all()
+
+    results = []
+    for p in peers:
+        latest_nav = db.query(NAVHistory).filter(NAVHistory.fund_id == p.id).order_by(NAVHistory.date.desc()).first()
+        price = latest_nav.nav if latest_nav else (p.min_lumpsum or 100.0)
+        results.append({
+            "id": p.id,
+            "name": p.name,
+            "ticker": p.ticker,
+            "sector": p.sector or p.category,
+            "price": price,
+            "pe_ratio": p.pe_ratio or 20.0,
+            "aum": p.aum,
+            "rating": p.fund_rating,
+            "change_pct": round(p.alpha * 0.4, 2)
+        })
+    return results
 
 @router.get("/{fund_id}/nav-history", response_model=List[schemas.NAVHistoryResponse])
 def read_nav_history(fund_id: int, db: Session = Depends(get_db)) -> Any:

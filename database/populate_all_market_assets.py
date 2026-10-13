@@ -3,18 +3,65 @@ import sys
 from datetime import datetime, timedelta
 import random
 import math
+import json
+import re
 
 # Add backend directory to PYTHONPATH
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(root_dir, "backend"))
 
 from app.core.database import Base, engine, SessionLocal
 from app.models.models import MutualFund, NAVHistory, User
 from app.core.security import get_password_hash
 
+def parse_mcap(mcap_str):
+    if not mcap_str:
+        return 50000.0
+    cleaned = re.sub(r'[^\d.]', '', str(mcap_str))
+    try:
+        return float(cleaned)
+    except Exception:
+        return 50000.0
+
+def generate_calibrated_52w_history(ltp, low_52w, high_52w):
+    """
+    Generate 53 weekly price points strictly bounded by low_52w and high_52w,
+    ending exactly at ltp (today).
+    """
+    low_52w = min(low_52w, ltp * 0.98)
+    high_52w = max(high_52w, ltp * 1.02)
+    
+    low_week = random.randint(8, 26)
+    high_week = random.randint(28, 48) if low_week < 26 else random.randint(5, 20)
+    
+    prices = [0.0] * 53
+    prices[52] = round(ltp, 2)
+    prices[low_week] = round(low_52w, 2)
+    prices[high_week] = round(high_52w, 2)
+    
+    prices[0] = round(low_52w + (high_52w - low_52w) * random.uniform(0.3, 0.7), 2)
+    
+    key_points = sorted([(0, prices[0]), (low_week, low_52w), (high_week, high_52w), (52, ltp)], key=lambda x: x[0])
+    
+    for i in range(len(key_points) - 1):
+        w_start, p_start = key_points[i]
+        w_end, p_end = key_points[i+1]
+        span = w_end - w_start
+        for step in range(1, span):
+            w = w_start + step
+            base = p_start + (p_end - p_start) * (step / span)
+            noise_scale = (high_52w - low_52w) * 0.04
+            noise = random.normalvariate(0, noise_scale)
+            val = round(max(low_52w, min(high_52w, base + noise)), 2)
+            prices[w] = val
+
+    prices[52] = round(ltp, 2)
+    return prices
+
 def get_master_market_catalog():
     catalog = []
 
-    # 1. MUTUAL FUNDS CATALOG (100+ Mutual Funds across all AMCs & Categories)
+    # 1. MUTUAL FUNDS CATALOG
     mf_raw = [
         # Large Cap Funds
         ("HDFC Top 100 Fund", "HDFC Mutual Fund", "Large Cap", 0.011, 28450.0, "Rahul Baijal", 650.0),
@@ -133,10 +180,17 @@ def get_master_market_catalog():
             "initial_nav": nav,
             "annual_return": round(random.uniform(0.13, 0.23), 3),
             "volatility": round(random.uniform(0.11, 0.18), 2),
-            "ticker": None
+            "ticker": None,
+            "pe_ratio": round(random.uniform(18.0, 32.0), 1),
+            "pb_ratio": round(random.uniform(2.5, 4.5), 1),
+            "dividend_yield": 1.2,
+            "sector": f"Mutual Fund - {cat}",
+            "high_52w": round(nav * 1.15, 2),
+            "low_52w": round(nav * 0.82, 2),
+            "is_stock": False
         })
 
-    # 2. ETFS CATALOG (35+ Exchange Traded Funds)
+    # 2. ETFS CATALOG
     etfs_raw = [
         ("NIFTYBEES.NS", "Nippon India ETF Nifty BeES", "Nippon India Mutual Fund", 265.0, 28500.0),
         ("BANKBEES.NS", "Nippon India ETF Bank BeES", "Nippon India Mutual Fund", 578.0, 14200.0),
@@ -204,163 +258,234 @@ def get_master_market_catalog():
             "initial_nav": price,
             "annual_return": 0.14,
             "volatility": 0.13,
-            "ticker": sym
+            "ticker": sym,
+            "pe_ratio": 22.0,
+            "pb_ratio": 3.2,
+            "dividend_yield": 1.35,
+            "sector": "Index ETF",
+            "high_52w": round(price * 1.18, 2),
+            "low_52w": round(price * 0.85, 2),
+            "is_stock": False
         })
 
-    # 3. LISTED STOCKS CATALOG (120+ Nifty 500 & Midcap Equities)
-    stocks_raw = [
-        ("RELIANCE.NS", "Reliance Industries Ltd", "Energy", 2980.0, 1950000.0),
-        ("TCS.NS", "Tata Consultancy Services Ltd", "IT", 4250.0, 1420000.0),
-        ("HDFCBANK.NS", "HDFC Bank Ltd", "Banking", 1640.0, 1280000.0),
-        ("ICICIBANK.NS", "ICICI Bank Ltd", "Banking", 1210.0, 840000.0),
-        ("BHARTIARTL.NS", "Bharti Airtel Ltd", "Telecom", 1580.0, 890000.0),
-        ("INFY.NS", "Infosys Ltd", "IT", 1820.0, 760000.0),
-        ("SBIN.NS", "State Bank of India", "Banking", 840.0, 720000.0),
-        ("LTC.NS", "ITC Ltd", "FMCG", 490.0, 610000.0),
-        ("LT.NS", "Larsen & Toubro Ltd", "Infrastructure", 3650.0, 510000.0),
-        ("KOTAKBANK.NS", "Kotak Mahindra Bank Ltd", "Banking", 1780.0, 350000.0),
-        ("AXISBANK.NS", "Axis Bank Ltd", "Banking", 1258.0, 391000.0),
-        ("BAJFINANCE.NS", "Bajaj Finance Ltd", "Finance", 7250.0, 420000.0),
-        ("HCLTECH.NS", "HCL Technologies Ltd", "IT", 1780.0, 480000.0),
-        ("MARUTI.NS", "Maruti Suzuki India Ltd", "Auto", 12400.0, 390000.0),
-        ("SUNPHARMA.NS", "Sun Pharmaceutical Industries", "Pharma", 1890.0, 450000.0),
-        ("NTPC.NS", "NTPC Ltd", "Power", 412.0, 399000.0),
-        ("POWERGRID.NS", "Power Grid Corporation of India", "Power", 345.0, 320000.0),
-        ("TATAMOTORS.NS", "Tata Motors Ltd", "Auto", 980.0, 340000.0),
-        ("TATASTEEL.NS", "Tata Steel Ltd", "Metals", 168.0, 210000.0),
-        ("ASIANPAINT.NS", "Asian Paints Ltd", "Consumer", 2890.0, 277000.0),
-        ("TITAN.NS", "Titan Company Ltd", "Consumer", 3480.0, 308000.0),
-        ("ULTRACEMCO.NS", "UltraTech Cement Ltd", "Cement", 11200.0, 323000.0),
-        ("COALINDIA.NS", "Coal India Ltd", "Mining", 485.0, 298000.0),
-        ("M&M.NS", "Mahindra & Mahindra Ltd", "Auto", 3120.0, 387000.0),
-        ("BAJAJFINSV.NS", "Bajaj Finserv Ltd", "Financial Services", 1900.0, 302000.0),
-        ("HINDALCO.NS", "Hindalco Industries Ltd", "Metals", 685.0, 153000.0),
-        ("GRASIM.NS", "Grasim Industries Ltd", "Materials", 2680.0, 178000.0),
-        ("NESTLEIND.NS", "Nestle India Ltd", "FMCG", 2520.0, 243000.0),
-        ("TECHM.NS", "Tech Mahindra Ltd", "IT", 1620.0, 158000.0),
-        ("INDUSINDBK.NS", "IndusInd Bank Ltd", "Banking", 1380.0, 107000.0),
-        ("ADANIPORTS.NS", "Adani Ports & Special Economic Zone", "Infrastructure", 1480.0, 319000.0),
-        ("ADANIENT.NS", "Adani Enterprises Ltd", "Conglomerate", 3120.0, 355000.0),
-        ("EICHERMOT.NS", "Eicher Motors Ltd", "Auto", 4890.0, 134000.0),
-        ("CIPLA.NS", "Cipla Ltd", "Pharma", 1580.0, 127000.0),
-        ("DRREDDY.NS", "Dr. Reddy's Laboratories Ltd", "Pharma", 6840.0, 114000.0),
-        ("BAJAJ-AUTO.NS", "Bajaj Auto Ltd", "Auto", 9850.0, 276000.0),
-        ("DIVISLAB.NS", "Divi's Laboratories Ltd", "Pharma", 5210.0, 138000.0),
-        ("HEROMOTOCO.NS", "Hero MotoCorp Ltd", "Auto", 5480.0, 109000.0),
-        ("APOLLOHOSP.NS", "Apollo Hospitals Enterprise", "Healthcare", 6950.0, 99000.0),
-        ("SBILIFE.NS", "SBI Life Insurance Company", "Insurance", 1820.0, 182000.0),
-        ("HDFCLIFE.NS", "HDFC Life Insurance Company", "Insurance", 740.0, 159000.0),
-        ("BRITANNIA.NS", "Britannia Industries Ltd", "FMCG", 5890.0, 141000.0),
-        ("TRENT.NS", "Trent Ltd", "Retail", 7120.0, 280000.0),
-        ("ZOMATO.NS", "Zomato Ltd", "Tech", 265.0, 240000.0),
-        ("JIOFIN.NS", "Jio Financial Services Ltd", "Finance", 345.0, 219000.0),
-        ("PAYTM.NS", "One97 Communications (Paytm)", "Tech", 720.0, 45000.0),
-        ("VBL.NS", "Varun Beverages Ltd", "FMCG", 640.0, 208000.0),
-        ("DLF.NS", "DLF Ltd", "Real Estate", 860.0, 212000.0),
-        ("BEL.NS", "Bharat Electronics Ltd", "Defense", 295.0, 215000.0),
-        ("HAL.NS", "Hindustan Aeronautics Ltd", "Defense", 4581.70, 305000.0),
-        ("MAZDOCK.NS", "Mazagon Dock Shipbuilders Ltd", "Defense", 4420.0, 89000.0),
-        ("POLYCAB.NS", "Polycab India Ltd", "Cables", 6850.0, 103000.0),
-        ("PERSISTENT.NS", "Persistent Systems Ltd", "IT", 5420.0, 83000.0),
-        ("COFORGE.NS", "Coforge Ltd", "IT", 6980.0, 46000.0),
-        ("TVSMOTOR.NS", "TVS Motor Company Ltd", "Auto", 3792.0, 180000.0),
-        ("MUTHOOTFIN.NS", "Muthoot Finance Ltd", "Finance", 3079.0, 120000.0),
-        ("SHRIRAMFIN.NS", "Shriram Finance Ltd", "Finance", 1061.5, 142000.0),
-        ("HINDZINC.NS", "Hindustan Zinc Ltd", "Metals", 534.4, 225000.0),
-        ("ABB.NS", "ABB India Ltd", "Capital Goods", 8120.0, 172000.0),
-        ("ADANIENSOL.NS", "Adani Energy Solutions", "Power", 1040.0, 116000.0),
-        ("ADANIGREEN.NS", "Adani Green Energy Ltd", "Power", 1780.0, 281000.0),
-        ("ADANIPOWER.NS", "Adani Power Ltd", "Power", 670.0, 258000.0),
-        ("AMBUJACEM.NS", "Ambuja Cements Ltd", "Cement", 640.0, 157000.0),
-        ("APOLOTYRE.NS", "Apollo Tyres Ltd", "Auto Ancillary", 510.0, 32000.0),
-        ("ASHOKLEY.NS", "Ashok Leyland Ltd", "Auto", 245.0, 72000.0),
-        ("AUROPHARMA.NS", "Aurobindo Pharma Ltd", "Pharma", 1480.0, 86000.0),
-        ("BANKBARODA.NS", "Bank of Baroda", "Banking", 260.0, 134000.0),
-        ("BHARATFORG.NS", "Bharat Forge Ltd", "Industrial", 1580.0, 73000.0),
-        ("BHEL.NS", "Bharat Heavy Electricals Ltd", "Capital Goods", 310.0, 107000.0),
-        ("CANBK.NS", "Canara Bank", "Banking", 112.0, 101000.0),
-        ("CGPOWER.NS", "CG Power & Industrial Solutions", "Capital Goods", 740.0, 113000.0),
-        ("CHOLAFIN.NS", "Cholamandalam Investment & Fin", "Finance", 1420.0, 119000.0),
-        ("CONCOR.NS", "Container Corporation of India", "Logistics", 980.0, 59000.0),
-        ("CUMMINSIND.NS", "Cummins India Ltd", "Capital Goods", 3890.0, 107000.0),
-        ("DABUR.NS", "Dabur India Ltd", "FMCG", 610.0, 108000.0),
-        ("DIXON.NS", "Dixon Technologies India", "Electronics", 12400.0, 74000.0),
-        ("DMART.NS", "Avenue Supermarts Ltd (DMart)", "Retail", 4650.0, 302000.0),
-        ("FEDERALBNK.NS", "Federal Bank Ltd", "Banking", 195.0, 47000.0),
-        ("GAIL.NS", "GAIL (India) Ltd", "Energy", 230.0, 151000.0),
-        ("GODREJCP.NS", "Godrej Consumer Products", "FMCG", 1480.0, 151000.0),
-        ("HAVELLS.NS", "Havells India Ltd", "Consumer Durables", 1920.0, 120000.0),
-        ("IDFCFIRSTB.NS", "IDFC First Bank Ltd", "Banking", 78.0, 55000.0),
-        ("INDIHOTEL.NS", "Indian Hotels Company Ltd", "Hospitality", 680.0, 96000.0),
-        ("IOC.NS", "Indian Oil Corporation Ltd", "Energy", 175.0, 247000.0),
-        ("IRCTC.NS", "Indian Railway Catering & Tourism", "Logistics", 940.0, 75000.0),
-        ("IRFC.NS", "Indian Railway Finance Corporation", "Finance", 178.0, 232000.0),
-        ("INDIGO.NS", "InterGlobe Aviation (IndiGo)", "Aviation", 4850.0, 187000.0),
-        ("JINDALSTEL.NS", "Jindal Steel & Power Ltd", "Metals", 980.0, 100000.0),
-        ("JSWENERGY.NS", "JSW Energy Ltd", "Power", 740.0, 129000.0),
-        ("JSWSTEEL.NS", "JSW Steel Ltd", "Metals", 940.0, 229000.0),
-        ("JUBLFOOD.NS", "Jubilant FoodWorks Ltd", "QSR", 620.0, 40000.0),
-        ("LTIM.NS", "LTIMindtree Ltd", "IT", 5890.0, 174000.0),
-        ("LUPIN.NS", "Lupin Ltd", "Pharma", 2180.0, 99000.0),
-        ("MAXHEALTH.NS", "Max Healthcare Institute", "Healthcare", 980.0, 95000.0),
-        ("MPHASIS.NS", "Mphasis Ltd", "IT", 3120.0, 58000.0),
-        ("MRF.NS", "MRF Ltd", "Auto Ancillary", 138000.0, 58000.0),
-        ("NAUKRI.NS", "Info Edge (India) Ltd (Naukri)", "Tech", 8250.0, 106000.0),
-        ("NHPC.NS", "NHPC Ltd", "Power", 102.0, 102000.0),
-        ("NMDC.NS", "NMDC Ltd", "Mining", 245.0, 71000.0),
-        ("ONGC.NS", "Oil & Natural Gas Corporation", "Energy", 325.0, 408000.0),
-        ("PFC.NS", "Power Finance Corporation", "Finance", 520.0, 171000.0),
-        ("PIDILITIND.NS", "Pidilite Industries Ltd", "Chemicals", 3120.0, 158000.0),
-        ("PNB.NS", "Punjab National Bank", "Banking", 124.0, 136000.0),
-        ("RECLTD.NS", "REC Ltd", "Finance", 610.0, 160000.0),
-        ("RVNL.NS", "Rail Vikas Nigam Ltd", "Infrastructure", 580.0, 121000.0),
-        ("SAIL.NS", "Steel Authority of India Ltd", "Metals", 148.0, 61000.0),
-        ("SIEMENS.NS", "Siemens Ltd", "Capital Goods", 7850.0, 279000.0),
-        ("SUZLON.NS", "Suzlon Energy Ltd", "Renewables", 82.0, 111000.0),
-        ("TATACONSUM.NS", "Tata Consumer Products", "FMCG", 1180.0, 115000.0),
-        ("TATAPOWER.NS", "Tata Power Company Ltd", "Power", 440.0, 140000.0),
-        ("TORNTPOWER.NS", "Torrent Power Ltd", "Power", 1890.0, 90000.0),
-        ("VEDL.NS", "Vedanta Ltd", "Mining", 460.0, 178000.0),
-        ("WIPRO.NS", "Wipro Ltd", "IT", 540.0, 282000.0),
-        ("YESBANK.NS", "Yes Bank Ltd", "Banking", 24.5, 76000.0),
-        ("ZYDUSLIFE.NS", "Zydus Lifesciences Ltd", "Pharma", 1180.0, 118000.0)
+    # 3. OFFICIAL DHAN NIFTY 50 CONSTITUENT STOCKS
+    dhan_mapping = {
+        "RELIANCEIN.NS": ("RELIANCE.NS", "Reliance Industries Ltd", "Oil, Gas & Energy", "Market leader in telecom, retail & green energy;High operating cash flow", "Capex cycle and exposure to crude margins"),
+        "BHARTIAIRT.NS": ("BHARTIARTL.NS", "Bharti Airtel Ltd", "Telecommunications", "Rapid ARPU expansion and high 5G market share;Dominant Africa presence", "Intense telecom rivalry and regulatory fees"),
+        "HDFCBANK.NS": ("HDFCBANK.NS", "HDFC Bank Ltd", "Banking & Finance", "India's largest private bank with premier asset quality;Massive branch reach", "Post-merger loan-to-deposit ratio digestion"),
+        "ICICIBANK.NS": ("ICICIBANK.NS", "ICICI Bank Ltd", "Banking & Finance", "Best-in-class return on equity;Strong retail underwriting and digital banking", "Vulnerability to macro lending slowdown"),
+        "STATEBANKO.NS": ("SBIN.NS", "State Bank of India", "Banking & Finance", "Nationwide systemic deposit moat;Strong corporate loan pipeline", "Higher PSU operating overhead and priority sector burdens"),
+        "TATACONSUL.NS": ("TCS.NS", "Tata Consultancy Services Ltd", "Information Technology", "Industry-leading operating margins;Massive enterprise client retention", "Global corporate tech discretionary spend cuts"),
+        "BAJAJFINAN.NS": ("BAJFINANCE.NS", "Bajaj Finance Ltd", "Banking & Finance", "Pioneer in omnichannel consumer credit and cross-sell;High ROA", "Rising unsecured personal loan default risks"),
+        "LARSENTOUB.NS": ("LT.NS", "Larsen & Toubro Ltd", "Infrastructure & Capital Goods", "Multi-trillion rupee order book in India & Middle East;Hydrocarbon/defense play", "Execution delays and raw material inflationary pressures"),
+        "HINDUSTANU.NS": ("HINDUNILVR.NS", "Hindustan Unilever Ltd", "FMCG & Consumer Goods", "Household staple brands present in 9 out of 10 Indian homes;High ROCE", "Rural consumption demand sensitivity and local brand competition"),
+        "SUNPHARMAC.NS": ("SUNPHARMA.NS", "Sun Pharmaceutical Industries Ltd", "Pharmaceuticals & Healthcare", "Global specialty drug momentum;Strong domestic formulations market share", "US FDA regulatory inspection findings"),
+        "INFOSYS.NS": ("INFY.NS", "Infosys Ltd", "Information Technology", "Top generative AI & digital transformation deals;Attractive free cash dividend payout", "Subdued banking and telecom client tech spend in North America"),
+        "MARUTISUZU.NS": ("MARUTI.NS", "Maruti Suzuki India Ltd", "Automobile", "Unmatched domestic dealership and service network;Dominant passenger car share", "Slower rollout in pure electric vehicle segment"),
+        "ADANIPORTS.NS": ("ADANIPORTS.NS", "Adani Ports & Special Economic Zone", "Infrastructure & Capital Goods", "Strategic commercial port locations across both coastlines;High EBITDA margins", "Geopolitical maritime transit risks"),
+        "TITAN.NS": ("TITAN.NS", "Titan Company Ltd", "FMCG & Consumer Goods", "Tanishq brand loyalty and formalization of Indian jewellery;High luxury retail moat", "Gold price volatility and customs duty adjustments"),
+        "ADANIENTER.NS": ("ADANIENT.NS", "Adani Enterprises Ltd", "Infrastructure & Capital Goods", "Incubator of flagship infrastructure assets (airports, roads, green hydrogen)", "Substantial consolidated leverage and project gestation"),
+        "MAHINDRAMA.NS": ("M&M.NS", "Mahindra & Mahindra Ltd", "Automobile", "Unchallenged leader in SUVs and agricultural tractors;Fast EV transition", "Semiconductor component bottlenecks and cyclical farm income"),
+        "AXISBANK.NS": ("AXISBANK.NS", "Axis Bank Ltd", "Banking & Finance", "High retail credit card engagement;Improved NIM and Citi India portfolio synergies", "Competition in wholesale deposit repricing"),
+        "KOTAKBANK.NS": ("KOTAKBANK.NS", "Kotak Mahindra Bank Ltd", "Banking & Finance", "High CASA ratio and fortress balance sheet;Low net NPA profile", "Leadership transition and RBI compliance audits"),
+        "ULTRATECHC.NS": ("ULTRACEMCO.NS", "UltraTech Cement Ltd", "Infrastructure & Capital Goods", "Largest cement manufacturer in India with rapid pan-India capacity expansion", "Energy and petcoke freight cost spikes"),
+        "ITC.NS": ("ITC.NS", "ITC Ltd", "FMCG & Consumer Goods", "Near-monopoly cigarette cash generator powering FMCG & hotel demergers;High dividend yield", "Tobacco taxation risks and long FMCG margin gestation"),
+        "NTPC.NS": ("NTPC.NS", "NTPC Ltd", "Power & Green Energy", "India's largest thermal power producer ramping up gigawatt green energy pipeline", "Coal linkage logistics and transition capex burden"),
+        "HCLTECHNOL.NS": ("HCLTECH.NS", "HCL Technologies Ltd", "Information Technology", "Strong engineering R&D and proprietary software product portfolio;Resilient margins", "High attrition and client concentration in telecommunications"),
+        "OILNATURAL.NS": ("ONGC.NS", "Oil & Natural Gas Corporation Ltd", "Oil, Gas & Energy", "Dominant upstream crude and gas producer;High dividend yield and sovereign backing", "Windfall taxes and crude price cyclicality"),
+        "JSWSTEEL.NS": ("JSWSTEEL.NS", "JSW Steel Ltd", "Metals & Mining", "Cost-efficient steel mills with rapid domestic brownfield capacity additions", "Global steel dumping from China and raw material coking coal price shifts"),
+        "BAJAJFINSE.NS": ("BAJAJFINSV.NS", "Bajaj Finserv Ltd", "Banking & Finance", "Holding company over consumer finance, life insurance, and general insurance leaders", "Regulatory tightening in credit insurance commissions"),
+        "BHARATELEC.NS": ("BEL.NS", "Bharat Electronics Ltd", "Defense & Aerospace", "Dominant electronics supplier for Indian military;Government indigenization push", "Single client (Ministry of Defence) order release timelines"),
+        "BAJAJAUTO.NS": ("BAJAJ-AUTO.NS", "Bajaj Auto Ltd", "Automobile", "Global export footprint in two-wheelers and three-wheelers;High EV Chetak momentum", "Foreign exchange constraints in emerging export markets (Africa, LATAM)"),
+        "NESTLE.NS": ("NESTLEIND.NS", "Nestle India Ltd", "FMCG & Consumer Goods", "Unrivaled brand equity with Maggi, Nescafe and Cerelac;High return on capital", "Raw cocoa, milk and agricultural commodity cost inflation"),
+        "ETERNAL.NS": ("ZOMATO.NS", "Zomato Ltd (Eternal)", "Technology & Internet", "Blinkit quick-commerce hyper-growth and restaurant delivery duopoly;Turned net profitable", "Intense quick-commerce dark store wars with Zepto and Swiggy"),
+        "POWERGRIDC.NS": ("POWERGRID.NS", "Power Grid Corporation of India", "Power & Green Energy", "Monopoly interstate power transmission grid;Guaranteed return on equity model", "Grid integration challenges with intermittent renewable projects"),
+        "COALINDIA.NS": ("COALINDIA.NS", "Coal India Ltd", "Metals & Mining", "Monopoly coal miner supplying ~70% of India's electricity generation;Huge dividends", "Environmental carbon phase-down targets and wage negotiations"),
+        "ASIANPAINT.NS": ("ASIANPAINT.NS", "Asian Paints Ltd", "FMCG & Consumer Goods", "Dominant decorative paint distribution network with vast dealer tints;High ROCE", "New competitive entrants (Birla Opus) putting pressure on market share"),
+        "SHRIRAMFIN.NS": ("SHRIRAMFIN.NS", "Shriram Finance Ltd", "Banking & Finance", "Leading pre-owned commercial vehicle financier;High net interest margins", "Sensitivity to diesel fuel prices and small fleet operator distress"),
+        "TATASTEEL.NS": ("TATASTEEL.NS", "Tata Steel Ltd", "Metals & Mining", "Integrated low-cost iron ore mines in India;High value-added automotive flat products", "Loss-making European steel plants in UK and Netherlands"),
+        "GRASIMINDU.NS": ("GRASIM.NS", "Grasim Industries Ltd", "Infrastructure & Capital Goods", "Viscose staple fiber global leader and aggressive paints venture Birla Opus", "High capital expenditure in new paints venture with upfront marketing drag"),
+        "HINDALCOIN.NS": ("HINDALCO.NS", "Hindalco Industries Ltd", "Metals & Mining", "Novelis subsidiary leadership in beverage cans;Low-cost upstream aluminium smelters", "Recessionary automotive demand in North America affecting Novelis margins"),
+        "EICHERMOTO.NS": ("EICHERMOT.NS", "Eicher Motors Ltd", "Automobile", "Iconic Royal Enfield brand premiumization and middleweight motorcycling dominance", "Competitive cruiser launches from Triumph and Harley-Davidson"),
+        "INTERGLOBE.NS": ("INDIGO.NS", "InterGlobe Aviation Ltd (IndiGo)", "Aviation & Logistics", "Domestic airline monopoly with ~63% market share and lowest cost per seat-kilometer", "Aviation turbine fuel price volatility and Pratt & Whitney engine groundings"),
+        "WIPRO.NS": ("WIPRO.NS", "Wipro Ltd", "Information Technology", "Enterprise cloud migrations and strategic consulting;Capco digital synergies", "Slower organic revenue growth than peers during technology downcycles"),
+        "SBILIFEINS.NS": ("SBILIFE.NS", "SBI Life Insurance Company", "Banking & Finance", "Access to SBI's unmatched 22,000+ branch bancassurance distribution channel", "Surrender charge regulatory policy updates by IRDAI"),
+        "JIOFINANCI.NS": ("JIOFIN.NS", "Jio Financial Services Ltd", "Banking & Finance", "Massive digital data distribution scale and BlackRock AMC joint venture", "Early stage rollout with nascent credit balance sheet track record"),
+        "TECHMAHIND.NS": ("TECHM.NS", "Tech Mahindra Ltd", "Information Technology", "Core telecom 5G engineering focus and enterprise turnaround strategy", "Subdued capital expenditure by global telecom network carriers"),
+        "TRENT.NS": ("TRENT.NS", "Trent Ltd", "FMCG & Consumer Goods", "Zudio fast-fashion phenomenon driving stellar same-store sales growth;Tata governance", "Aggressive store expansion carrying rental commitments during consumer slowdowns"),
+        "APOLLOHOSP.NS": ("APOLLOHOSP.NS", "Apollo Hospitals Enterprise", "Pharmaceuticals & Healthcare", "Premier tertiary healthcare hospital chain and 24/7 digital pharmacy network", "Operating losses in Apollo 24/7 digital health platform"),
+        "TATAMOTORS.NS": ("TATAMOTORS.NS", "Tata Motors Ltd", "Automobile", "Jaguar Land Rover premium turnaround;Domestic leader in passenger electric cars", "Geopolitical slowdown in European luxury vehicle sales and heavy debt history"),
+        "HDFCLIFEIN.NS": ("HDFCLIFE.NS", "HDFC Life Insurance Company", "Banking & Finance", "Industry-leading product innovation in non-par and protection;HDFC brand trust", "High cost of acquisition in competitive agency channels"),
+        "CIPLA.NS": ("CIPLA.NS", "Cipla Ltd", "Pharmaceuticals & Healthcare", "Market leader in respiratory medicine;Strong South Africa and domestic portfolio", "US generic drug price deflation and regulatory inspections"),
+        "MAXHEALTHC.NS": ("MAXHEALTH.NS", "Max Healthcare Institute", "Pharmaceuticals & Healthcare", "High average revenue per occupied bed (ARPOB) in affluent urban centers (NCR, Mumbai)", "High capital cost of hospital brownfield bed additions"),
+        "TATACONSUM.NS": ("TATACONSUM.NS", "Tata Consumer Products Ltd", "FMCG & Consumer Goods", "Tata Tea, Tata Salt, and fast-growing Sampann and Soulfull packaged food brands", "Intense FMCG competition and raw tea price commodity fluctuations"),
+        "DRREDDYSLA.NS": ("DRREDDY.NS", "Dr. Reddy's Laboratories Ltd", "Pharmaceuticals & Healthcare", "Strong biosimilars pipeline and resilient global generic formulations", "Generic Revlimid cliff and regulatory compliance observations")
+    }
+
+    dhan_json_path = os.path.join(root_dir, 'nifty_50_dhan.json')
+    dhan_items = []
+    if os.path.exists(dhan_json_path):
+        with open(dhan_json_path, 'r', encoding='utf-8') as f:
+            dhan_items = json.load(f)
+
+    for item in dhan_items:
+        raw_sym = item.get("symbol")
+        if raw_sym in dhan_mapping:
+            clean_ticker, company_name, sector, pros_str, cons_str = dhan_mapping[raw_sym]
+            ltp = float(item.get("price", 100.0))
+            low_52w = float(item.get("low52w", ltp * 0.75))
+            high_52w = float(item.get("high52w", ltp * 1.30))
+            pe_val = float(item.get("peRatio", 24.5)) if item.get("peRatio") else 24.5
+            mcap_val = parse_mcap(item.get("marketCap"))
+            weight = float(item.get("weightPct", 2.0))
+
+            catalog.append({
+                "name": company_name,
+                "amc": f"NSE: {clean_ticker}",
+                "category": "Listed Stock",
+                "risk_category": "High" if mcap_val > 100000 else "Very High",
+                "expense_ratio": 0.0,
+                "fund_rating": 5 if weight >= 2.5 or mcap_val > 300000 else 4,
+                "aum": mcap_val,
+                "fund_manager": "Board of Directors & Management",
+                "manager_tenure": 8.5,
+                "exit_load": "Nil (Equity delivery)",
+                "lock_in_period": "None",
+                "min_sip": 1.0,
+                "min_lumpsum": ltp,
+                "sharpe_ratio": round(random.uniform(1.2, 2.3), 2),
+                "sortino_ratio": round(random.uniform(1.4, 2.8), 2),
+                "alpha": round(random.uniform(1.5, 9.5), 1),
+                "beta": round(random.uniform(0.75, 1.25), 2),
+                "standard_deviation": round(random.uniform(13.0, 24.0), 1),
+                "treynor_ratio": round(random.uniform(14.0, 28.0), 1),
+                "upside_capture": round(random.uniform(92.0, 138.0), 1),
+                "downside_capture": round(random.uniform(65.0, 95.0), 1),
+                "portfolio_turnover": 0.0,
+                "consistency_score": round(random.uniform(82.0, 98.0), 1),
+                "drawdown": round(random.uniform(0.10, 0.22), 2),
+                "benchmark_outperformance": round(random.uniform(1.0, 7.5), 1),
+                "taxation": "Equity Stock: 15% STCG. 12.5% LTCG above INR 1.25 Lakh.",
+                "pros": pros_str,
+                "cons": cons_str,
+                "target_benchmark": f"NIFTY {sector.upper().split('&')[0].strip()}",
+                "initial_nav": ltp,
+                "annual_return": round(random.uniform(0.12, 0.28), 3),
+                "volatility": round(random.uniform(0.12, 0.22), 2),
+                "ticker": clean_ticker,
+                "pe_ratio": pe_val,
+                "pb_ratio": round(random.uniform(2.1, 7.8), 1),
+                "dividend_yield": round(random.uniform(0.6, 3.4), 2),
+                "sector": sector,
+                "high_52w": high_52w,
+                "low_52w": low_52w,
+                "is_stock": True
+            })
+
+    # 4. TOP NIFTY NEXT 50 & HIGH-MOMENTUM MIDCAP STOCKS
+    midcaps_raw = [
+        ("HAL.NS", "Hindustan Aeronautics Ltd", "Defense & Aerospace", 4581.70, 305000.0, 38.5, 5675.0, 3010.0, "Monopoly fighter jet and helicopter manufacturer;Surging defense exports"),
+        ("VBL.NS", "Varun Beverages Ltd", "FMCG & Consumer Goods", 640.0, 208000.0, 68.2, 685.0, 410.0, "Key PepsiCo global bottler with rapid Africa and Indian territory expansion"),
+        ("DMART.NS", "Avenue Supermarts Ltd (DMart)", "FMCG & Consumer Goods", 4650.0, 302000.0, 98.4, 5484.0, 3660.0, "Lowest cost grocery retailer with owned real estate store model"),
+        ("POLYCAB.NS", "Polycab India Ltd", "Infrastructure & Capital Goods", 6850.0, 103000.0, 48.2, 7350.0, 4600.0, "Dominant market share in cables & wires benefitting from real estate upcycle"),
+        ("DLF.NS", "DLF Ltd", "Real Estate", 860.0, 212000.0, 62.0, 967.0, 680.0, "Super-luxury residential pre-sales in NCR;Huge commercial rental portfolio"),
+        ("MAZDOCK.NS", "Mazagon Dock Shipbuilders Ltd", "Defense & Aerospace", 4420.0, 89000.0, 34.5, 5860.0, 2100.0, "Submarine and stealth frigate construction backlog with Indian Navy"),
+        ("PERSISTENT.NS", "Persistent Systems Ltd", "Information Technology", 5420.0, 83000.0, 52.1, 6150.0, 3600.0, "Leader in cloud and AI software engineering with double-digit growth"),
+        ("COFORGE.NS", "Coforge Ltd", "Information Technology", 6980.0, 46000.0, 42.0, 7800.0, 4400.0, "Deep domain expertise in travel, transportation and insurance IT"),
+        ("SUZLON.NS", "Suzlon Energy Ltd", "Power & Green Energy", 82.0, 111000.0, 65.4, 86.0, 38.0, "Turnaround story with debt-free balance sheet;Surging wind turbine orderbook"),
+        ("RVNL.NS", "Rail Vikas Nigam Ltd", "Infrastructure & Capital Goods", 580.0, 121000.0, 54.0, 647.0, 210.0, "Ministry of Railways turnkey infrastructure delivery with high execution rate"),
+        ("IRFC.NS", "Indian Railway Finance Corporation", "Banking & Finance", 178.0, 232000.0, 32.5, 229.0, 125.0, "Pure sovereign railway asset financing with near-zero non-performing assets"),
+        ("BHEL.NS", "Bharat Heavy Electricals Ltd", "Infrastructure & Capital Goods", 310.0, 107000.0, 95.0, 335.0, 185.0, "Thermal power plant turbine revival and Vande Bharat train manufacturing"),
+        ("CGPOWER.NS", "CG Power & Industrial Solutions", "Infrastructure & Capital Goods", 740.0, 113000.0, 72.0, 790.0, 430.0, "High-voltage industrial motors and upcoming semiconductor packaging plant"),
+        ("TVSMOTOR.NS", "TVS Motor Company Ltd", "Automobile", 3792.0, 180000.0, 58.0, 3950.0, 2100.0, "Rapid market share gain in premium two-wheelers and EV scooters"),
+        ("MUTHOOTFIN.NS", "Muthoot Finance Ltd", "Banking & Finance", 3079.0, 120000.0, 18.5, 3200.0, 1380.0, "India's largest gold loan NBFC benefitting from soaring gold collateral value"),
+        ("DIXON.NS", "Dixon Technologies India", "Infrastructure & Capital Goods", 12400.0, 74000.0, 92.0, 13900.0, 5800.0, "Primary electronics manufacturing services player for global smartphone brands"),
+        ("PIDILITIND.NS", "Pidilite Industries Ltd", "FMCG & Consumer Goods", 3120.0, 158000.0, 74.0, 3300.0, 2500.0, "Unchallenged consumer monopoly in adhesives (Fevicol) and construction chemicals"),
+        ("HINDZINC.NS", "Hindustan Zinc Ltd", "Metals & Mining", 534.4, 225000.0, 24.5, 807.0, 285.0, "World's second-largest zinc producer with top-tier cost of production"),
+        ("PAYTM.NS", "One97 Communications (Paytm)", "Technology & Internet", 720.0, 45000.0, 35.0, 950.0, 310.0, "Massive merchant soundbox deployment base and core payments turnaround"),
+        ("CONCOR.NS", "Container Corporation of India", "Aviation & Logistics", 980.0, 59000.0, 38.0, 1180.0, 790.0, "Dominant multimodal container logistics network connected to dedicated freight corridor"),
+        ("CUMMINSIND.NS", "Cummins India Ltd", "Infrastructure & Capital Goods", 3890.0, 107000.0, 54.0, 4150.0, 2200.0, "Leading manufacturer of industrial power gensets and green hydrogen electrolyzers"),
+        ("DABUR.NS", "Dabur India Ltd", "FMCG & Consumer Goods", 610.0, 108000.0, 46.0, 672.0, 490.0, "Ayurvedic and natural healthcare product leader with deep rural brand trust"),
+        ("GODREJCP.NS", "Godrej Consumer Products", "FMCG & Consumer Goods", 1480.0, 151000.0, 56.0, 1530.0, 1100.0, "Market leader in household insecticides and personal wash across India & Indonesia"),
+        ("HAVELLS.NS", "Havells India Ltd", "FMCG & Consumer Goods", 1920.0, 120000.0, 68.0, 2100.0, 1300.0, "Fast-moving electrical goods powerhouse across wires, switches and Lloyd cooling"),
+        ("INDIHOTEL.NS", "Indian Hotels Company Ltd", "FMCG & Consumer Goods", 680.0, 96000.0, 64.0, 720.0, 420.0, "Taj brand luxury hospitality leader riding record domestic leisure & corporate tourism"),
+        ("IOC.NS", "Indian Oil Corporation Ltd", "Oil, Gas & Energy", 175.0, 247000.0, 8.2, 196.0, 118.0, "India's largest petroleum refiner and fuel marketing network;High dividend payout"),
+        ("IRCTC.NS", "Indian Railway Catering & Tourism", "Aviation & Logistics", 940.0, 75000.0, 58.0, 1140.0, 760.0, "Exclusive online ticketing and catering monopoly for Indian Railways"),
+        ("JSWENERGY.NS", "JSW Energy Ltd", "Power & Green Energy", 740.0, 129000.0, 58.0, 785.0, 420.0, "Rapidly scaling green energy independent power producer with storage projects"),
+        ("LTIM.NS", "LTIMindtree Ltd", "Information Technology", 5890.0, 174000.0, 34.0, 6450.0, 4500.0, "Tier-1 IT services provider with strong presence in banking and insurance domains"),
+        ("LUPIN.NS", "Lupin Ltd", "Pharmaceuticals & Healthcare", 2180.0, 99000.0, 36.0, 2300.0, 1250.0, "Leading global producer of generic anti-TB, cardiovascular and respiratory formulations"),
+        ("MPHASIS.NS", "Mphasis Ltd", "Information Technology", 3120.0, 58000.0, 32.0, 3350.0, 2150.0, "Specialized IT solutions provider with concentrated banking & financial services deals"),
+        ("MRF.NS", "MRF Ltd", "Automobile", 138000.0, 58000.0, 28.0, 151000.0, 115000.0, "Highest-priced Indian stock with gold-standard tyre brand recall across all vehicles"),
+        ("NAUKRI.NS", "Info Edge (India) Ltd (Naukri)", "Technology & Internet", 8250.0, 106000.0, 82.0, 8900.0, 4800.0, "Monopoly white-collar recruitment portal Naukri.com with early stakes in top unicorns"),
+        ("PFC.NS", "Power Finance Corporation", "Banking & Finance", 520.0, 171000.0, 7.8, 580.0, 360.0, "Key lender to state electricity boards and renewable projects;Generous dividend yield"),
+        ("RECLTD.NS", "REC Ltd", "Banking & Finance", 610.0, 160000.0, 8.4, 655.0, 410.0, "Infrastructure finance company powering transmission and distribution modernization"),
+        ("SIEMENS.NS", "Siemens Ltd", "Infrastructure & Capital Goods", 7850.0, 279000.0, 85.0, 8200.0, 4400.0, "Global engineering giant driving factory automation, grid infrastructure and rail mobility"),
+        ("TATAPOWER.NS", "Tata Power Company Ltd", "Power & Green Energy", 440.0, 140000.0, 36.0, 495.0, 310.0, "Pioneer in rooftop solar, EV charging networks, and renewable capacity buildout"),
+        ("TORNTPOWER.NS", "Torrent Power Ltd", "Power & Green Energy", 1890.0, 90000.0, 38.0, 2050.0, 1100.0, "Highly efficient private power distribution licensee in Gujarat, Maharashtra and UP"),
+        ("VEDL.NS", "Vedanta Ltd", "Metals & Mining", 460.0, 178000.0, 12.0, 525.0, 250.0, "Diversified natural resources conglomerate spanning zinc, aluminium, oil and power"),
+        ("ZYDUSLIFE.NS", "Zydus Lifesciences Ltd", "Pharmaceuticals & Healthcare", 1180.0, 118000.0, 26.0, 1320.0, 750.0, "Formulation and API leader with high market share in US generic launches"),
+        ("BANKBARODA.NS", "Bank of Baroda", "Banking & Finance", 260.0, 134000.0, 6.8, 298.0, 205.0, "Second-largest public sector bank with clean asset quality and rising retail book"),
+        ("PNB.NS", "Punjab National Bank", "Banking & Finance", 124.0, 136000.0, 8.2, 142.0, 85.0, "Systemic public sector lender showing substantial reduction in gross NPAs"),
+        ("CANBK.NS", "Canara Bank", "Banking & Finance", 112.0, 101000.0, 6.2, 128.0, 82.0, "Strong commercial credit growth and high return on equity among PSU banks"),
+        ("IDFCFIRSTB.NS", "IDFC First Bank Ltd", "Banking & Finance", 78.0, 55000.0, 18.0, 92.0, 68.0, "Retail-focused private bank with high customer satisfaction and CASA growth"),
+        ("FEDERALBNK.NS", "Federal Bank Ltd", "Banking & Finance", 195.0, 47000.0, 11.2, 215.0, 142.0, "Southern private lender with solid fintech partnerships and NRI remittance flow"),
+        ("YESBANK.NS", "Yes Bank Ltd", "Banking & Finance", 24.5, 76000.0, 42.0, 32.8, 19.5, "Reconstructed private bank rebuilding its retail deposit franchise"),
+        ("INDUSINDBK.NS", "IndusInd Bank Ltd", "Banking & Finance", 1380.0, 107000.0, 11.5, 1690.0, 1240.0, "Strong commercial vehicle lending and microfinance franchise"),
+        ("DIVISLAB.NS", "Divi's Laboratories Ltd", "Pharmaceuticals & Healthcare", 5210.0, 138000.0, 72.0, 5800.0, 3400.0, "World leader in active pharmaceutical ingredients (APIs) and custom synthesis"),
+        ("AUROPHARMA.NS", "Aurobindo Pharma Ltd", "Pharmaceuticals & Healthcare", 1480.0, 86000.0, 21.0, 1590.0, 940.0, "Extensive global generic portfolio with low manufacturing cost structure"),
+        ("JUBLFOOD.NS", "Jubilant FoodWorks Ltd", "FMCG & Consumer Goods", 620.0, 40000.0, 95.0, 690.0, 420.0, "Domino's Pizza master franchisee and pioneer in food delivery technology"),
+        ("BHARATFORG.NS", "Bharat Forge Ltd", "Infrastructure & Capital Goods", 1580.0, 73000.0, 44.0, 1820.0, 1050.0, "Global leader in automotive forgings and rapidly growing artillery defense maker"),
+        ("APOLOTYRE.NS", "Apollo Tyres Ltd", "Automobile", 510.0, 32000.0, 18.0, 585.0, 440.0, "Strong presence in Indian commercial vehicle tyres and European passenger cars"),
+        ("ASHOKLEY.NS", "Ashok Leyland Ltd", "Automobile", 245.0, 72000.0, 24.0, 264.0, 165.0, "Flagship Hinduja group company holding second spot in Indian medium/heavy trucks"),
+        ("CHOLAFIN.NS", "Cholamandalam Investment & Finance", "Banking & Finance", 1420.0, 119000.0, 32.0, 1650.0, 1050.0, "Premier vehicle and home loan non-bank lender with low bad debts"),
+        ("AMBUJACEM.NS", "Ambuja Cements Ltd", "Infrastructure & Capital Goods", 640.0, 157000.0, 45.0, 706.0, 490.0, "Adani group cement arm with massive logistics and brownfield expansion plans"),
+        ("NMDC.NS", "NMDC Ltd", "Metals & Mining", 245.0, 71000.0, 12.0, 286.0, 175.0, "India's largest iron ore miner with low extraction costs and high dividends"),
+        ("SAIL.NS", "Steel Authority of India Ltd", "Metals & Mining", 148.0, 61000.0, 22.0, 175.0, 110.0, "Major public sector steel maker supplying rails and plates for national infrastructure"),
+        ("GAIL.NS", "GAIL (India) Ltd", "Oil, Gas & Energy", 230.0, 151000.0, 14.0, 246.0, 155.0, "Monopoly natural gas pipeline operator driving India's gas-based economy transition")
     ]
 
-    for sym, name, cat, price, mcap in stocks_raw:
+    for sym, name, sector, price, mcap, pe, high, low, pros in midcaps_raw:
         catalog.append({
             "name": name,
             "amc": f"NSE: {sym}",
             "category": "Listed Stock",
-            "risk_category": "Very High" if mcap < 50000 else "High",
+            "risk_category": "High" if mcap > 100000 else "Very High",
             "expense_ratio": 0.0,
-            "fund_rating": 5 if mcap > 200000 else 4,
-            "aum": mcap / 10.0,
-            "fund_manager": "CEO / Board",
-            "manager_tenure": 6.5,
-            "exit_load": "Nil",
+            "fund_rating": 5 if mcap > 150000 else 4,
+            "aum": mcap,
+            "fund_manager": "Board of Directors & Management",
+            "manager_tenure": 7.0,
+            "exit_load": "Nil (Equity delivery)",
             "lock_in_period": "None",
             "min_sip": 1.0,
             "min_lumpsum": price,
-            "sharpe_ratio": round(random.uniform(1.1, 2.2), 2),
-            "sortino_ratio": round(random.uniform(1.3, 2.7), 2),
-            "alpha": round(random.uniform(1.5, 9.5), 1),
-            "beta": round(random.uniform(0.75, 1.25), 2),
-            "standard_deviation": round(random.uniform(12.0, 24.0), 1),
+            "sharpe_ratio": round(random.uniform(1.2, 2.2), 2),
+            "sortino_ratio": round(random.uniform(1.4, 2.6), 2),
+            "alpha": round(random.uniform(2.0, 11.0), 1),
+            "beta": round(random.uniform(0.8, 1.3), 2),
+            "standard_deviation": round(random.uniform(14.0, 26.0), 1),
             "treynor_ratio": round(random.uniform(14.0, 28.0), 1),
             "upside_capture": round(random.uniform(90.0, 140.0), 1),
             "downside_capture": round(random.uniform(65.0, 95.0), 1),
             "portfolio_turnover": 0.0,
-            "consistency_score": round(random.uniform(80.0, 98.0), 1),
-            "drawdown": round(random.uniform(0.10, 0.22), 2),
-            "benchmark_outperformance": round(random.uniform(1.0, 7.0), 1),
-            "taxation": "Equity Stock: 15% STCG. 12.5% LTCG.",
-            "pros": f"Market leader in {cat};Strong institutional backing",
-            "cons": "Exposed to broader market cycles",
-            "target_benchmark": f"NIFTY {cat.upper()}",
+            "consistency_score": round(random.uniform(80.0, 96.0), 1),
+            "drawdown": round(random.uniform(0.12, 0.25), 2),
+            "benchmark_outperformance": round(random.uniform(1.5, 8.0), 1),
+            "taxation": "Equity Stock: 15% STCG. 12.5% LTCG above INR 1.25 Lakh.",
+            "pros": pros,
+            "cons": "Exposed to broader market cycles and interest rate shifts",
+            "target_benchmark": f"NIFTY {sector.upper().split('&')[0].strip()}",
             "initial_nav": price,
-            "annual_return": round(random.uniform(0.12, 0.28), 3),
-            "volatility": round(random.uniform(0.12, 0.22), 2),
-            "ticker": sym
+            "annual_return": round(random.uniform(0.14, 0.32), 3),
+            "volatility": round(random.uniform(0.14, 0.25), 2),
+            "ticker": sym,
+            "pe_ratio": pe,
+            "pb_ratio": round(random.uniform(2.5, 8.5), 1),
+            "dividend_yield": round(random.uniform(0.5, 3.2), 2),
+            "sector": sector,
+            "high_52w": high,
+            "low_52w": low,
+            "is_stock": True
         })
 
     return catalog
@@ -401,6 +526,9 @@ def seed_db():
         master_catalog = get_master_market_catalog()
         print(f"Seeding total of {len(master_catalog)} master market assets into SQLite...")
         
+        today = datetime.utcnow().date()
+        start_date = today - timedelta(weeks=52)
+
         for temp in master_catalog:
             fund = MutualFund(
                 name=temp["name"],
@@ -434,23 +562,32 @@ def seed_db():
                 target_benchmark=temp["target_benchmark"],
                 morningstar_rating=temp.get("fund_rating", 4),
                 crisil_rating=temp.get("fund_rating", 4),
-                ticker=temp.get("ticker", None)
+                ticker=temp.get("ticker", None),
+                pe_ratio=temp.get("pe_ratio", None),
+                pb_ratio=temp.get("pb_ratio", None),
+                dividend_yield=temp.get("dividend_yield", None),
+                sector=temp.get("sector", None),
+                high_52w=temp.get("high_52w", None),
+                low_52w=temp.get("low_52w", None)
             )
             db.add(fund)
             db.commit()
             db.refresh(fund)
             
-            # 52 weeks historical pricing for charts
             nav_values = []
-            cur_price = temp["initial_nav"]
-            today = datetime.utcnow().date()
-            start_date = today - timedelta(weeks=52)
             
-            for w in range(53):
-                date = start_date + timedelta(weeks=w)
-                growth = (temp["annual_return"] - 0.5 * temp["volatility"]**2) * (1.0/52.0) + temp["volatility"] * random.normalvariate(0, 1) * (1.0/52.0)**0.5
-                cur_price = max(1.0, cur_price * math.exp(growth))
-                nav_values.append(NAVHistory(fund_id=fund.id, date=date, nav=round(cur_price, 2)))
+            if temp.get("is_stock") and temp.get("high_52w") and temp.get("low_52w"):
+                calibrated_prices = generate_calibrated_52w_history(temp["initial_nav"], temp["low_52w"], temp["high_52w"])
+                for w in range(53):
+                    date = start_date + timedelta(weeks=w)
+                    nav_values.append(NAVHistory(fund_id=fund.id, date=date, nav=calibrated_prices[w]))
+            else:
+                cur_price = temp["initial_nav"]
+                for w in range(53):
+                    date = start_date + timedelta(weeks=w)
+                    growth = (temp["annual_return"] - 0.5 * temp["volatility"]**2) * (1.0/52.0) + temp["volatility"] * random.normalvariate(0, 1) * (1.0/52.0)**0.5
+                    cur_price = max(1.0, cur_price * math.exp(growth))
+                    nav_values.append(NAVHistory(fund_id=fund.id, date=date, nav=round(cur_price, 2)))
                 
             db.bulk_save_objects(nav_values)
             db.commit()

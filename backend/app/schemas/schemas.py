@@ -92,6 +92,12 @@ class MutualFundResponse(BaseModel):
     morningstar_rating: int
     crisil_rating: int
     ticker: Optional[str] = None
+    pe_ratio: Optional[float] = None
+    pb_ratio: Optional[float] = None
+    dividend_yield: Optional[float] = None
+    sector: Optional[str] = None
+    high_52w: Optional[float] = None
+    low_52w: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -107,6 +113,10 @@ class MutualFundSearchResponse(BaseModel):
     risk_category: str
     is_custom: bool = False
     ticker: Optional[str] = None
+    pe_ratio: Optional[float] = None
+    sector: Optional[str] = None
+    high_52w: Optional[float] = None
+    low_52w: Optional[float] = None
 
 class FundResolve(BaseModel):
     scheme_code: int

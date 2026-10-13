@@ -305,11 +305,11 @@ function ScreenerPageContent() {
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-white/5 bg-slate-950/30 text-slate-500 font-semibold uppercase tracking-wider">
-                      <th className="px-5 py-3.5">Asset / Fund Name</th>
-                      <th className="px-4 py-3.5">Category</th>
+                      <th className="px-5 py-3.5">Asset / Company</th>
+                      <th className="px-4 py-3.5">{assetType === "STOCKS" ? "Sector" : "Category"}</th>
                       <th className="px-4 py-3.5">Rating</th>
-                      <th className="px-4 py-3.5">Expense</th>
-                      <th className="px-4 py-3.5">AUM (Cr)</th>
+                      <th className="px-4 py-3.5">{assetType === "STOCKS" ? "P/E Ratio" : "Expense"}</th>
+                      <th className="px-4 py-3.5">{assetType === "STOCKS" ? "Market Cap" : "AUM"}</th>
                       <th className="px-4 py-3.5">Risk Level</th>
                       <th className="px-5 py-3.5 text-right">Action</th>
                     </tr>
@@ -321,11 +321,27 @@ function ScreenerPageContent() {
                         onClick={() => handleSelectFund(f.id)}
                         className={`hover:bg-white/5 transition-all cursor-pointer ${selectedFund?.id === f.id ? "bg-emerald-500/5" : ""}`}
                       >
-                        <td className="px-5 py-4 font-bold text-white max-w-[200px] truncate">{f.name}</td>
-                        <td className="px-4 py-4 text-slate-400 font-medium">{f.category}</td>
+                        <td className="px-5 py-4 max-w-[240px]">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-white truncate block">{f.name}</span>
+                            {f.ticker && (
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10 shrink-0">
+                                {f.ticker}
+                              </span>
+                            )}
+                          </div>
+                          {f.sector && (
+                            <span className="text-[10px] text-slate-500 block truncate">{f.sector}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 text-slate-400 font-medium">
+                          {f.category === "Listed Stock" && f.sector ? f.sector : f.category}
+                        </td>
                         <td className="px-4 py-4 text-amber-400 font-bold">{"★".repeat(f.fund_rating)}</td>
-                        <td className="px-4 py-4 text-white">{(f.expense_ratio * 100).toFixed(2)}%</td>
-                        <td className="px-4 py-4 text-slate-300 font-semibold">{f.aum.toLocaleString()} Cr</td>
+                        <td className="px-4 py-4 text-white font-mono">
+                          {f.category === "Listed Stock" ? (f.pe_ratio ? `${f.pe_ratio}x` : "22.4x") : `${(f.expense_ratio * 100).toFixed(2)}%`}
+                        </td>
+                        <td className="px-4 py-4 text-slate-300 font-semibold font-mono">₹{f.aum.toLocaleString()} Cr</td>
                         <td className="px-4 py-4">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
                             f.risk_category === "Low" ? "bg-blue-500/10 text-blue-400" :

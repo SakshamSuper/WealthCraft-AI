@@ -82,11 +82,19 @@ def get_mutual_funds(
         query = query.filter(or_(
             MutualFund.name.like(search_term),
             MutualFund.amc.like(search_term),
-            MutualFund.fund_manager.like(search_term)
+            MutualFund.fund_manager.like(search_term),
+            MutualFund.ticker.like(search_term),
+            MutualFund.sector.like(search_term)
         ))
         
     if category:
-        query = query.filter(MutualFund.category == category)
+        cat_lower = category.lower()
+        if cat_lower in ["stocks", "stock", "listed stock"]:
+            query = query.filter(MutualFund.category.in_(["Listed Stock", "Stocks", "Stock"]))
+        elif cat_lower in ["etf", "etfs"]:
+            query = query.filter(MutualFund.category.in_(["ETF", "ETFs"]))
+        else:
+            query = query.filter(MutualFund.category == category)
         
     if risk:
         query = query.filter(MutualFund.risk_category == risk)

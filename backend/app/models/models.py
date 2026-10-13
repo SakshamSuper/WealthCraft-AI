@@ -79,6 +79,14 @@ class MutualFund(Base):
     morningstar_rating = Column(Integer, default=3)
     crisil_rating = Column(Integer, default=3)
     ticker = Column(String, nullable=True)
+
+    # Stock Fundamentals & Market Metrics
+    pe_ratio = Column(Float, nullable=True)
+    pb_ratio = Column(Float, nullable=True)
+    dividend_yield = Column(Float, nullable=True)
+    sector = Column(String, nullable=True)
+    high_52w = Column(Float, nullable=True)
+    low_52w = Column(Float, nullable=True)
     
     # Relationships
     nav_history = relationship("NAVHistory", back_populates="fund", cascade="all, delete-orphan")
