@@ -89,18 +89,6 @@ function ComparePageContent() {
     }
   };
 
-  const handleAddFund = () => {
-    if (!addingId) return;
-    const fid = Number(addingId);
-    if (selectedIds.includes(fid)) return;
-    if (selectedIds.length >= 5) {
-      alert("You can compare a maximum of 5 funds side-by-side.");
-      return;
-    }
-    setSelectedIds([...selectedIds, fid]);
-    setAddingId("");
-  };
-
   const handleRemoveFund = (id: number) => {
     setSelectedIds(selectedIds.filter((x) => x !== id));
   };
