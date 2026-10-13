@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WealthCraft AI – Mutual Fund & Portfolio Analytics</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#090d16',
+            primary: {
+              DEFAULT: '#0F172A',
+              foreground: '#F8FAFC',
+            },
+            accent: {
+              DEFAULT: '#10B981',
+              hover: '#059669',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            heading: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      background-color: #090d16;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 0%, rgba(30, 58, 138, 0.25) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 1rem;
+    }
+
+    .glass-panel-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .glass-panel-hover:hover {
+      border-color: rgba(16, 185, 129, 0.3);
+      box-shadow: 0 10px 30px -10px rgba(16, 185, 129, 0.15);
+      transform: translateY(-2px);
+    }
+    
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.3);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(16, 185, 129, 0.3);
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body class="text-slate-100 font-sans min-h-screen flex flex-col">
+
+  <!-- Nav Header -->
+  <header class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+    <div class="glass-panel flex items-center justify-between px-6 py-4 bg-slate-950/40 backdrop-blur-md">
+      <!-- Logo -->
+      <div class="flex items-center gap-2.5 cursor-pointer" onclick="switchTab('dashboard')">
+        <img src="frontend/public/wealthcraft_logo.jpg" alt="WealthCraft Logo" class="w-8 h-8 rounded-xl object-cover ring-1 ring-white/10 shadow-lg shadow-emerald-500/20" />
+        <span class="font-heading font-black text-xl tracking-tight text-white">
+          WealthCraft<span class="text-emerald-400 font-extrabold">.AI</span>
+        </span>
+      </div>
+
+      <!-- Navigation links -->
+      <div class="hidden md:flex items-center gap-1.5 text-slate-400 font-medium text-sm">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex items-center gap-1.5 px-4 py-2 rounded-lg text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+        </button>
+        <button onclick="switchTab('screener')" id="nav-screener" class="nav-btn flex items-center gap-1.5 px-4 py-2 rounded-lg hover:text-white hover:bg-white/5 border border-transparent">
+          <i data-lucide="search" class="w-4 h-4"></i> Screener
+        </button>
+        <button onclick="switchTab('compare')" id="nav-compare" class="nav-btn flex items-center gap-1.5 px-4 py-2 rounded-lg hover:text-white hover:bg-white/5 border border-transparent">
+          <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Compare
+        </button>
+        <button onclick="switchTab('portfolio')" id="nav-portfolio" class="nav-btn flex items-center gap-1.5 px-4 py-2 rounded-lg hover:text-white hover:bg-white/5 border border-transparent">
+          <i data-lucide="briefcase" class="w-4 h-4"></i> Portfolio
+        </button>
+        <button onclick="switchTab('goals')" id="nav-goals" class="nav-btn flex items-center gap-1.5 px-4 py-2 rounded-lg hover:text-white hover:bg-white/5 border border-transparent">
+          <i data-lucide="target" class="w-4 h-4"></i> Goals
+        </button>
+        <button onclick="switchTab('chat')" id="nav-chat" class="nav-btn flex items-center gap-1.5 px-4 py-2 rounded-lg hover:text-white hover:bg-white/5 border border-transparent">
+          <i data-lucide="message-square" class="w-4 h-4"></i> AI Chat
+        </button>
+      </div>
+
+      <!-- Profile indicator -->
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-slate-400 hidden sm:inline">Demo Mode</span>
+        <div class="w-8 h-8 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-slate-300">
+          <i data-lucide="user" class="w-4 h-4"></i>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- PAGE: DASHBOARD -->
+    <div id="page-dashboard" class="tab-page space-y-6">
+      <!-- Welcome Header -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 class="font-heading font-extrabold text-3xl text-white">Welcome Back, <span class="text-emerald-400">Demo Investor</span></h1>
+          <p class="text-xs text-slate-500">Stockify has assessed your Moderate profile and updated calculations.</p>
+        </div>
+        <button onclick="downloadPdfMock()" class="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/10 transition-all">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i> Download Advice PDF
+        </button>
+      </div>
+
+      <!-- Metrics Row -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="glass-panel p-5 bg-slate-950/40">
+          <i data-lucide="wallet" class="text-emerald-400 w-5 h-5 mb-3"></i>
+          <div class="text-[10px] text-slate-500 uppercase">Portfolio Value</div>
+          <div class="font-heading font-bold text-xl text-white mt-1">INR 3,50,000</div>
+          <div class="text-[9px] text-emerald-400 mt-2">Abs Return: +16.2%</div>
+        </div>
+        <div class="glass-panel p-5 bg-slate-950/40">
+          <i data-lucide="trending-up" class="text-emerald-400 w-5 h-5 mb-3"></i>
+          <div class="text-[10px] text-slate-500 uppercase">Target SIP</div>
+          <div class="font-heading font-bold text-xl text-white mt-1">INR 15,000/mo</div>
+          <div class="text-[9px] text-slate-500 mt-2">Horizon: 10 Years</div>
+        </div>
+        <div class="glass-panel p-5 bg-slate-950/40">
+          <i data-lucide="sparkles" class="text-emerald-400 w-5 h-5 mb-3"></i>
+          <div class="text-[10px] text-slate-500 uppercase">Expected Wealth</div>
+          <div class="font-heading font-bold text-xl text-white mt-1">INR 34,80,000</div>
+          <div class="text-[9px] text-slate-500 mt-2">At 12% CAGR</div>
+        </div>
+        <div class="glass-panel p-5 bg-slate-950/40">
+          <i data-lucide="award" class="text-emerald-400 w-5 h-5 mb-3"></i>
+          <div class="text-[10px] text-slate-500 uppercase">Risk Score</div>
+          <div class="font-heading font-bold text-xl text-white mt-1">75 / 100</div>
+          <div class="text-[9px] text-emerald-400 mt-2">Appetite: Moderate</div>
+        </div>
+        <div class="glass-panel p-5 bg-slate-950/40">
+          <i data-lucide="bar-chart-3" class="text-emerald-400 w-5 h-5 mb-3"></i>
+          <div class="text-[10px] text-slate-500 uppercase">Diversification</div>
+          <div class="font-heading font-bold text-xl text-white mt-1">88 / 100</div>
+          <div class="text-[9px] text-emerald-400 mt-2">Highly Optimized</div>
+        </div>
+      </div>
+
+      <!-- Charts & Sentiments Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Chart -->
+        <div class="lg:col-span-2 glass-panel p-6 bg-slate-950/40">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h2 class="font-heading font-bold text-lg text-white">Outperformance vs Benchmark</h2>
+              <p class="text-xs text-slate-500">Stockify simulated growth compared with Nifty 50</p>
+            </div>
+            <div class="flex gap-4 text-xs font-semibold">
+              <span class="text-emerald-400">• Portfolio</span>
+              <span class="text-blue-400">• Nifty 50</span>
+            </div>
+          </div>
+          <div class="h-60">
+            <canvas id="dashboardChart"></canvas>
+          </div>
+        </div>
+
+        <!-- AI Insight Box -->
+        <div class="glass-panel p-6 bg-slate-950/40 flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="flex items-center gap-2">
+              <i data-lucide="sparkles" class="text-emerald-400 w-4 h-4"></i>
+              <h2 class="font-heading font-bold text-lg text-white">AI Engine Insight</h2>
+            </div>
+            <div class="p-4 bg-emerald-500/5 border border-emerald-500/10 text-xs text-slate-300 leading-relaxed rounded-xl space-y-3">
+              <p>
+                India's macro economic stability is strong, yielding a **cautiously bullish** framework for mutual fund growth.
+              </p>
+              <p>
+                Your portfolio holds **Parag Parikh Flexi Cap Fund**, which has outpaced its benchmark index by 4.5% active alpha. We recommend keeping this allocation unchanged.
+              </p>
+            </div>
+          </div>
+          <button onclick="switchTab('chat')" class="w-full bg-slate-900 border border-white/5 hover:bg-slate-800 text-white font-bold py-2 rounded-lg text-xs mt-4 transition-all">
+            Consult AI Advisor
+          </button>
+        </div>
+      </div>
+
+      <!-- Top picks grid -->
+      <div class="glass-panel p-6 bg-slate-950/40">
+        <h2 class="font-heading font-bold text-lg text-white mb-4">Top Matches for Your Profile</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Fund Pick 1 -->
+          <div class="p-5 rounded-xl border border-white/5 bg-slate-900/40 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="px-2 py-0.5 rounded bg-white/5 text-slate-400">Flexi Cap</span>
+                <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold">Match: 94%</span>
+              </div>
+              <h3 className="font-heading font-bold text-white text-base mt-3 leading-snug">Parag Parikh Flexi Cap Fund</h3>
+              <div class="grid grid-cols-3 gap-2 py-3 border-y border-white/5 my-3 text-center text-xs">
+                <div><div class="text-[9px] text-slate-500">Rating</div><div class="font-bold text-white">★★★★★</div></div>
+                <div><div class="text-[9px] text-slate-500">Expense</div><div class="font-bold text-white">0.70%</div></div>
+                <div><div class="text-[9px] text-slate-500">Sharpe</div><div class="font-bold text-white">1.72</div></div>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-relaxed italic">"Matches profile by maintaining robust value picks alongside Google/Microsoft exposure."</p>
+            </div>
+            <button onclick="switchTab('screener')" class="w-full bg-slate-900 py-2 rounded-lg text-xs font-bold text-white border border-white/5 hover:bg-slate-800 mt-4">Details</button>
+          </div>
+          <!-- Fund Pick 2 -->
+          <div class="p-5 rounded-xl border border-white/5 bg-slate-900/40 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="px-2 py-0.5 rounded bg-white/5 text-slate-400">Small Cap</span>
+                <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold">Match: 88%</span>
+              </div>
+              <h3 className="font-heading font-bold text-white text-base mt-3 leading-snug">Nippon India Small Cap Fund</h3>
+              <div class="grid grid-cols-3 gap-2 py-3 border-y border-white/5 my-3 text-center text-xs">
+                <div><div class="text-[9px] text-slate-500">Rating</div><div class="font-bold text-white">★★★★★</div></div>
+                <div><div class="text-[9px] text-slate-500">Expense</div><div class="font-bold text-white">0.70%</div></div>
+                <div><div class="text-[9px] text-slate-500">Sharpe</div><div class="font-bold text-white">1.85</div></div>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-relaxed italic">"Delivers premium compounding but carries high short-term volatility."</p>
+            </div>
+            <button onclick="switchTab('screener')" class="w-full bg-slate-900 py-2 rounded-lg text-xs font-bold text-white border border-white/5 hover:bg-slate-800 mt-4">Details</button>
+          </div>
+          <!-- Fund Pick 3 -->
+          <div class="p-5 rounded-xl border border-white/5 bg-slate-900/40 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="px-2 py-0.5 rounded bg-white/5 text-slate-400">Large Cap</span>
+                <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold">Match: 82%</span>
+              </div>
+              <h3 className="font-heading font-bold text-white text-base mt-3 leading-snug">SBI Bluechip Fund</h3>
+              <div class="grid grid-cols-3 gap-2 py-3 border-y border-white/5 my-3 text-center text-xs">
+                <div><div class="text-[9px] text-slate-500">Rating</div><div class="font-bold text-white">★★★★☆</div></div>
+                <div><div class="text-[9px] text-slate-500">Expense</div><div class="font-bold text-white">0.90%</div></div>
+                <div><div class="text-[9px] text-slate-500">Sharpe</div><div class="font-bold text-white">1.30</div></div>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-relaxed italic">"Conservative large-cap mandate limits downside volatility."</p>
+            </div>
+            <button onclick="switchTab('screener')" class="w-full bg-slate-900 py-2 rounded-lg text-xs font-bold text-white border border-white/5 hover:bg-slate-800 mt-4">Details</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: SCREENER -->
+    <div id="page-screener" class="tab-page hidden space-y-6">
+      <div>
+        <h1 class="font-heading font-extrabold text-3xl text-white">Screener</h1>
+        <p class="text-xs text-slate-500">Search funds, compare statistics, and analyze forecasts.</p>
+      </div>
+
+      <div class="flex flex-col lg:flex-row gap-6">
+        <!-- List -->
+        <div class="flex-1 space-y-4">
+          <!-- Filters -->
+          <div class="glass-panel p-4 bg-slate-950/40 grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+            <div class="space-y-1">
+              <label class="text-[10px] text-slate-500">Search Keyword</label>
+              <input type="text" placeholder="SBI, HDFC..." class="w-full bg-slate-900 border border-white/5 rounded-lg py-1.5 px-3 text-xs text-white placeholder-slate-600 focus:outline-none">
+            </div>
+            <div class="space-y-1">
+              <label class="text-[10px] text-slate-500">Category</label>
+              <select class="w-full bg-slate-900 border border-white/5 rounded-lg py-1.5 px-3 text-xs text-white focus:outline-none">
+                <option>Large Cap</option>
+                <option selected>Flexi Cap</option>
+                <option>Small Cap</option>
+              </select>
+            </div>
+            <div class="space-y-1">
+              <label class="text-[10px] text-slate-500">Min Rating</label>
+              <select class="w-full bg-slate-900 border border-white/5 rounded-lg py-1.5 px-3 text-xs text-white focus:outline-none">
+                <option>4+ Stars</option>
+              </select>
+            </div>
+            <button class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-1.5 rounded-lg text-xs transition-all">Apply Filter</button>
+          </div>
+
+          <!-- Table -->
+          <div class="glass-panel overflow-hidden border border-white/5">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="border-b border-white/5 bg-slate-950/30 text-slate-500 uppercase tracking-wider font-semibold">
+                  <th class="px-5 py-3">Fund Name</th>
+                  <th class="px-5 py-3">Category</th>
+                  <th class="px-5 py-3">Rating</th>
+                  <th class="px-5 py-3">Expense</th>
+                  <th class="px-5 py-3">AUM (Cr)</th>
+                  <th class="px-5 py-3 text-right">Details</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5 text-slate-300">
+                <tr class="hover:bg-white/5 transition-all cursor-pointer bg-emerald-500/5">
+                  <td class="px-5 py-4 font-bold text-white">Parag Parikh Flexi Cap Fund</td>
+                  <td class="px-5 py-4">Flexi Cap</td>
+                  <td class="px-5 py-4 text-amber-400 font-bold">★★★★★</td>
+                  <td class="px-5 py-4">0.70%</td>
+                  <td class="px-5 py-4">58,600 Cr</td>
+                  <td class="px-5 py-4 text-right"><span class="text-emerald-400 hover:underline">Selected</span></td>
+                </tr>
+                <tr class="hover:bg-white/5 transition-all cursor-pointer">
+                  <td class="px-5 py-4 font-bold text-white">Quant Active Fund</td>
+                  <td class="px-5 py-4">Flexi Cap</td>
+                  <td class="px-5 py-4 text-amber-400 font-bold">★★★★☆</td>
+                  <td class="px-5 py-4">0.75%</td>
+                  <td class="px-5 py-4">9,800 Cr</td>
+                  <td class="px-5 py-4 text-right"><span class="text-emerald-400 hover:underline">Select</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Detail sidebar -->
+        <div class="w-full lg:w-96 glass-panel p-6 bg-slate-950/60 border border-emerald-500/20 space-y-6">
+          <div class="border-b border-white/5 pb-3">
+            <span class="text-[10px] px-2 py-0.5 rounded bg-white/5 text-slate-400 font-bold uppercase">Flexi Cap</span>
+            <h2 class="font-heading font-extrabold text-lg text-white mt-1.5">Parag Parikh Flexi Cap Fund</h2>
+          </div>
+
+          <!-- Parameters table -->
+          <div class="grid grid-cols-2 gap-4 text-xs bg-slate-900/50 p-4 rounded-xl border border-white/5">
+            <div><span class="text-slate-500 block">Expense Ratio</span><span class="font-bold text-white">0.70%</span></div>
+            <div><span class="text-slate-500 block">AUM</span><span class="font-bold text-white">58,600 Cr</span></div>
+            <div><span class="text-slate-500 block">Sharpe Ratio</span><span class="font-bold text-white">1.72</span></div>
+            <div><span class="text-slate-500 block">Alpha</span><span class="font-bold text-white">5.4%</span></div>
+          </div>
+
+          <!-- Forecast Chart -->
+          <div>
+            <div class="flex items-center gap-1.5 mb-2">
+              <i data-lucide="sparkles" class="text-emerald-400 w-3.5 h-3.5"></i>
+              <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">12-Month ML NAV Forecast</h3>
+            </div>
+            <div class="h-32 w-full">
+              <canvas id="forecastChart"></canvas>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center bg-emerald-500/5 p-3 rounded-lg border border-emerald-500/10 text-xs mt-3">
+              <div><span class="text-[8px] text-slate-500 block">Exp. CAGR</span><span class="font-bold text-white">15.5%</span></div>
+              <div><span class="text-[8px] text-slate-500 block">Volatility</span><span class="font-bold text-white">11.2%</span></div>
+              <div><span class="text-[8px] text-slate-500 block">Confidence</span><span class="font-bold text-white">94%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: COMPARE -->
+    <div id="page-compare" class="tab-page hidden space-y-6">
+      <div>
+        <h1 class="font-heading font-extrabold text-3xl text-white">Fund Comparison Matrix</h1>
+        <p class="text-xs text-slate-500">Detailed parameter assessment and highlight winners.</p>
+      </div>
+
+      <!-- Comparison Matrix -->
+      <div class="glass-panel overflow-hidden border border-white/5">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="border-b border-white/5 bg-slate-950/30 text-slate-400 uppercase font-semibold">
+                <th class="px-5 py-3 w-48 border-r border-white/5">Fund Metric</th>
+                <th class="px-5 py-3 text-center border-r border-white/5 font-bold text-white">Parag Parikh Flexi Cap Fund</th>
+                <th class="px-5 py-3 text-center font-bold text-white">SBI Bluechip Fund</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-slate-300">
+              <tr>
+                <td class="px-5 py-3 font-semibold text-slate-400 border-r border-white/5">Category</td>
+                <td class="px-5 py-3 text-center border-r border-white/5">Flexi Cap</td>
+                <td class="px-5 py-3 text-center">Large Cap</td>
+              </tr>
+              <tr>
+                <td class="px-5 py-3 font-semibold text-slate-400 border-r border-white/5">Expense Ratio</td>
+                <td class="px-5 py-3 text-center border-r border-white/5">0.70%</td>
+                <td class="px-5 py-3 text-center">0.90%</td>
+              </tr>
+              <tr>
+                <td class="px-5 py-3 font-semibold text-slate-400 border-r border-white/5">AUM Size</td>
+                <td class="px-5 py-3 text-center border-r border-white/5">58,600 Cr</td>
+                <td class="px-5 py-3 text-center">41,200 Cr</td>
+              </tr>
+              <tr>
+                <td class="px-5 py-3 font-semibold text-slate-400 border-r border-white/5">Sharpe Ratio</td>
+                <td class="px-5 py-3 text-center border-r border-white/5 text-emerald-400 font-bold">1.72 (High)</td>
+                <td class="px-5 py-3 text-center">1.30</td>
+              </tr>
+              <tr>
+                <td class="px-5 py-3 font-semibold text-slate-400 border-r border-white/5">Alpha</td>
+                <td class="px-5 py-3 text-center border-r border-white/5 text-emerald-400 font-bold">+5.4%</td>
+                <td class="px-5 py-3 text-center">+2.1%</td>
+              </tr>
+              <tr>
+                <td class="px-5 py-3 font-semibold text-slate-400 border-r border-white/5">Exit Load</td>
+                <td class="px-5 py-3 text-center border-r border-white/5 text-slate-400">2.00% if < 1yr</td>
+                <td class="px-5 py-3 text-center text-slate-400">1.00% if < 1yr</td>
+              </tr>
+              <tr>
+                <td class="px-5 py-3 font-semibold text-slate-400 border-r border-white/5">LTCG Tax</td>
+                <td class="px-5 py-3 text-center border-r border-white/5 text-[10px] text-slate-400">12.5% over 1.25L</td>
+                <td class="px-5 py-3 text-center text-[10px] text-slate-400">12.5% over 1.25L</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- Winner Highlight -->
+      <div class="p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/25 flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-slate-950 font-bold shrink-0">
+          <i data-lucide="award" class="w-5 h-5"></i>
+        </div>
+        <div class="text-xs">
+          <h3 class="font-heading font-extrabold text-sm text-emerald-400 block mb-1">
+            Winner Highlight: Parag Parikh Flexi Cap Fund
+          </h3>
+          <p class="text-slate-400 leading-relaxed">
+            Parag Parikh Flexi Cap Fund wins because of higher risk-adjusted return (Sharpe 1.72 vs 1.30) and significantly superior alpha outperformance (5.4% vs 2.1%).
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: PORTFOLIO -->
+    <div id="page-portfolio" class="tab-page hidden space-y-6">
+      <div>
+        <h1 class="font-heading font-extrabold text-3xl text-white">Portfolio Tracker & Rebalancing</h1>
+        <p class="text-xs text-slate-500">Track and optimize your mutual fund transactions.</p>
+      </div>
+
+      <!-- Stats row -->
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="glass-panel p-5 bg-slate-950/40">
+          <div class="text-[9px] text-slate-500 uppercase">Portfolio Valuation</div>
+          <div class="font-heading font-bold text-xl text-white mt-0.5">INR 3,50,000</div>
+        </div>
+        <div class="glass-panel p-5 bg-slate-950/40">
+          <div class="text-[9px] text-slate-500 uppercase">Invested Capital</div>
+          <div class="font-heading font-bold text-xl text-white mt-0.5">INR 3,01,200</div>
+        </div>
+        <div class="glass-panel p-5 bg-slate-950/40">
+          <div class="text-[9px] text-slate-500 uppercase">Absolute Gained</div>
+          <div class="font-heading font-bold text-xl text-emerald-400 mt-0.5">+16.2%</div>
+        </div>
+        <div class="glass-panel p-5 bg-slate-950/40">
+          <div class="text-[9px] text-slate-500 uppercase">Annualized Returns (XIRR)</div>
+          <div class="font-heading font-bold text-xl text-emerald-400 mt-0.5">18.4%</div>
+        </div>
+      </div>
+
+      <!-- Rebalancing advice -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="glass-panel p-6 bg-slate-950/40">
+          <h2 class="font-heading font-bold text-lg text-white mb-4">Current Allocation vs Target</h2>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="border-b border-white/5 text-slate-500 uppercase tracking-wider font-semibold">
+                  <th class="pb-2">Category</th>
+                  <th class="pb-2 text-center">Current %</th>
+                  <th class="pb-2 text-center">Target %</th>
+                  <th class="pb-2 text-center">Diff</th>
+                  <th class="pb-2 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5 text-slate-300">
+                <tr>
+                  <td class="py-2.5 font-bold text-white">Large Cap</td>
+                  <td class="py-2.5 text-center">45.0%</td>
+                  <td class="py-2.5 text-center">30.0%</td>
+                  <td class="py-2.5 text-center text-red-400">+15.0%</td>
+                  <td class="py-2.5 text-right text-emerald-400 font-semibold">Reduce exposure</td>
+                </tr>
+                <tr>
+                  <td class="py-2.5 font-bold text-white">Flexi Cap</td>
+                  <td class="py-2.5 text-center">15.0%</td>
+                  <td class="py-2.5 text-center">30.0%</td>
+                  <td class="py-2.5 text-center text-emerald-400">-15.0%</td>
+                  <td class="py-2.5 text-right text-emerald-400 font-semibold">Increase exposure</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="glass-panel p-6 bg-slate-950/40 flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="flex items-center gap-2">
+              <i data-lucide="sparkles" class="text-emerald-400 w-4 h-4"></i>
+              <h2 class="font-heading font-bold text-lg text-white">Optimizer Suggestions</h2>
+            </div>
+            <div class="p-4 bg-amber-500/5 border border-amber-500/20 text-xs text-slate-300 leading-relaxed rounded-xl flex gap-2">
+              <i data-lucide="alert-triangle" class="text-amber-400 shrink-0 w-4 h-4 mt-0.5"></i>
+              <div>
+                Your portfolio is overweight in Large Cap assets by 15.0%. We recommend rebalancing your upcoming SIP contributions towards **Parag Parikh Flexi Cap Fund** to maximize risk-adjusted yields.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: GOALS -->
+    <div id="page-goals" class="tab-page hidden space-y-6">
+      <div>
+        <h1 class="font-heading font-extrabold text-3xl text-white">SIP Calculator & Goal Planner</h1>
+        <p class="text-xs text-slate-500">Calculate required contributions for targets.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Interactive SIP Calculator -->
+        <div class="lg:col-span-2 glass-panel p-6 bg-slate-950/40 space-y-6">
+          <h2 class="font-heading font-bold text-lg text-white border-b border-white/5 pb-3">SIP Compounding Simulator</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+            <div class="space-y-4">
+              <div class="space-y-1">
+                <div class="flex justify-between text-xs">
+                  <span class="text-slate-400">Monthly SIP Amount</span>
+                  <span class="font-bold text-white" id="sipValLabel">INR 10,000</span>
+                </div>
+                <input type="range" min="1000" max="50000" step="1000" value="10000" id="sipRange" oninput="updateSipCalc()" class="w-full h-1 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+              </div>
+              <div class="space-y-1">
+                <div class="flex justify-between text-xs">
+                  <span class="text-slate-400">Expected Return</span>
+                  <span class="font-bold text-white" id="cagrValLabel">12% CAGR</span>
+                </div>
+                <input type="range" min="5" max="25" step="0.5" value="12" id="cagrRange" oninput="updateSipCalc()" class="w-full h-1 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+              </div>
+              <div class="space-y-1">
+                <div class="flex justify-between text-xs">
+                  <span class="text-slate-400">Investment Period</span>
+                  <span class="font-bold text-white" id="yearsValLabel">10 Years</span>
+                </div>
+                <input type="range" min="1" max="30" step="1" value="10" id="yearsRange" oninput="updateSipCalc()" class="w-full h-1 bg-slate-900 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+              </div>
+            </div>
+            <!-- Pie Chart container -->
+            <div class="flex justify-center h-44">
+              <canvas id="sipPieChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Dynamic Output Grid -->
+          <div class="grid grid-cols-3 gap-2 bg-slate-900/50 p-4 rounded-xl border border-white/5 text-center text-xs">
+            <div><span class="text-slate-500 block uppercase text-[9px]">Invested</span><span class="font-bold text-white" id="outInvested">INR 12,00,000</span></div>
+            <div><span class="text-slate-500 block uppercase text-[9px]">Wealth Gained</span><span class="font-bold text-emerald-400" id="outGained">INR 11,23,390</span></div>
+            <div><span class="text-slate-500 block uppercase text-[9px]">Future Value</span><span class="font-bold text-white" id="outFV">INR 23,23,390</span></div>
+          </div>
+        </div>
+
+        <!-- Goal tracker list -->
+        <div class="glass-panel p-6 bg-slate-950/40 space-y-4">
+          <h2 class="font-heading font-bold text-lg text-white border-b border-white/5 pb-3">Active Goals</h2>
+          <div class="p-4 rounded-xl border border-white/5 bg-slate-900/40 space-y-2">
+            <h3 class="font-bold text-white text-sm">Dream Home</h3>
+            <div class="w-full h-2 bg-slate-950 rounded-full overflow-hidden">
+              <div class="h-full bg-emerald-500" style="width: 25%"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-slate-400">
+              <span>Goal: INR 50L (10 Years)</span>
+              <span>Req. SIP: INR 22,000/mo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: AI CHAT -->
+    <div id="page-chat" class="tab-page hidden space-y-6">
+      <div class="flex gap-6 min-h-[50vh] items-stretch">
+        <!-- Chat Frame -->
+        <div class="flex-1 glass-panel bg-slate-950/40 p-5 flex flex-col justify-between border border-white/5 relative">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
+          
+          <div class="border-b border-white/5 pb-3 mb-4">
+            <h2 class="font-heading font-bold text-white text-base flex items-center gap-1.5">
+              <i data-lucide="message-square" class="text-emerald-400 w-4 h-4"></i> AI Financial Advisor
+            </h2>
+          </div>
+
+          <!-- Chat Stream -->
+          <div class="flex-1 overflow-y-auto space-y-4 pr-2 mb-4 text-xs leading-relaxed max-h-[30vh] lg:max-h-[40vh]" id="chatLogs">
+            <div class="flex gap-3 max-w-[85%]">
+              <div class="w-7 h-7 rounded bg-emerald-500 flex items-center justify-center font-bold text-slate-950 shrink-0">AI</div>
+              <div class="p-3 bg-slate-900/60 border border-white/5 text-slate-300 rounded-xl leading-relaxed">
+                Hello! I am your Stockify AI assistant. Ask me questions about comparing mutual funds, taxation laws (STCG/LTCG), or optimization parameters!
+              </div>
+            </div>
+          </div>
+
+          <!-- Input form -->
+          <form onsubmit="handleSendMock(event)" class="flex gap-2 border-t border-white/5 pt-3">
+            <button type="button" onclick="simulateVoiceInput()" class="p-2.5 bg-slate-900 border border-white/5 text-slate-400 hover:text-white rounded-lg cursor-pointer" id="micBtn">
+              <i data-lucide="mic" class="w-4 h-4"></i>
+            </button>
+            <input type="text" placeholder="Ask Stockify AI..." id="chatInput" class="flex-1 bg-slate-900 border border-white/5 rounded-lg py-2.5 px-4 text-xs text-white focus:outline-none focus:border-emerald-500">
+            <button type="submit" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 rounded-lg text-xs cursor-pointer">
+              <i data-lucide="send" class="w-4 h-4"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="py-6 border-t border-white/5 text-center text-xs text-slate-500">
+    <p>© 2026 Stockify AI. All Rights Reserved. Demo Sandbox Environment.</p>
+  </footer>
+
+  <script>
+    // Tab switching logic
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-page').forEach(page => page.classList.add('hidden'));
+      document.getElementById('page-' + tabId).classList.remove('hidden');
+      
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.className = "nav-btn flex items-center gap-1.5 px-4 py-2 rounded-lg hover:text-white hover:bg-white/5 border border-transparent";
+      });
+      document.getElementById('nav-' + tabId).className = "nav-btn flex items-center gap-1.5 px-4 py-2 rounded-lg text-emerald-400 bg-emerald-500/10 border border-emerald-500/20";
+    }
+
+    // Download PDF alert
+    function downloadPdfMock() {
+      alert("Preparing downloadable PDF recommendation report. PDF contains 5-Year CAGR parameters, rebalancing suggestions, and client tax assessments.");
+    }
+
+    // Chart.js: Dashboard Chart
+    let ctxDb = document.getElementById('dashboardChart').getContext('2d');
+    let dbChart = new Chart(ctxDb, {
+      type: 'line',
+      data: {
+        labels: ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
+        datasets: [{
+          label: 'Portfolio (Simulated)',
+          data: [10, 25, 45, 70, 110],
+          borderColor: '#10B981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          tension: 0.3,
+          borderWidth: 2
+        }, {
+          label: 'Nifty 50 Index',
+          data: [8, 18, 32, 48, 75],
+          borderColor: '#3B82F6',
+          backgroundColor: 'transparent',
+          tension: 0.3,
+          borderWidth: 1.5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#64748b' } },
+          y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#64748b' } }
+        }
+      }
+    });
+
+    // Chart.js: Screener Forecast Chart
+    let ctxForecast = document.getElementById('forecastChart').getContext('2d');
+    let forecastChart = new Chart(ctxForecast, {
+      type: 'line',
+      data: {
+        labels: ['Now', '3 Months', '6 Months', '9 Months', '12 Months'],
+        datasets: [{
+          label: 'Predicted NAV Path',
+          data: [100, 103, 107, 111, 115.5],
+          borderColor: '#10B981',
+          backgroundColor: 'rgba(16, 185, 129, 0.05)',
+          fill: true,
+          tension: 0.2,
+          borderWidth: 2
+        }, {
+          label: 'Upper Band',
+          data: [100, 105, 111, 116, 121],
+          borderColor: 'rgba(59, 130, 246, 0.5)',
+          borderDash: [5, 5],
+          fill: false,
+          tension: 0.2,
+          borderWidth: 1
+        }, {
+          label: 'Lower Band',
+          data: [100, 99, 102, 105, 109],
+          borderColor: 'rgba(239, 68, 68, 0.5)',
+          borderDash: [5, 5],
+          fill: false,
+          tension: 0.2,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { display: false },
+          y: { display: false }
+        }
+      }
+    });
+
+    // Chart.js: Goals Pie Chart
+    let ctxPie = document.getElementById('sipPieChart').getContext('2d');
+    let pieChart = new Chart(ctxPie, {
+      type: 'doughnut',
+      data: {
+        labels: ['Invested Principal', 'Wealth Gained'],
+        datasets: [{
+          data: [1200000, 1123390],
+          backgroundColor: ['#3B82F6', '#10B981'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        cutout: '70%'
+      }
+    });
+
+    // Goals calculation logic
+    function updateSipCalc() {
+      let P = parseFloat(document.getElementById('sipRange').value);
+      let r = (parseFloat(document.getElementById('cagrRange').value) / 100.0) / 12.0;
+      let n = parseInt(document.getElementById('yearsRange').value) * 12;
+
+      document.getElementById('sipValLabel').innerText = 'INR ' + P.toLocaleString();
+      document.getElementById('cagrValLabel').innerText = (r * 1200).toFixed(1) + '% CAGR';
+      document.getElementById('yearsValLabel').innerText = (n / 12) + ' Years';
+
+      let totalInvested = P * n;
+      let futureValue = P * ((Math.pow(1 + r, n) - 1) / r) * (1 + r);
+      let wealthGained = Math.max(0, futureValue - totalInvested);
+
+      document.getElementById('outInvested').innerText = 'INR ' + Math.round(totalInvested).toLocaleString();
+      document.getElementById('outGained').innerText = 'INR ' + Math.round(wealthGained).toLocaleString();
+      document.getElementById('outFV').innerText = 'INR ' + Math.round(futureValue).toLocaleString();
+
+      pieChart.data.datasets[0].data = [totalInvested, wealthGained];
+      pieChart.update();
+    }
+
+    // Chat mock actions
+    function handleSendMock(e) {
+      e.preventDefault();
+      let inputVal = document.getElementById('chatInput').value;
+      if (!inputVal.trim()) return;
+
+      document.getElementById('chatInput').value = "";
+      
+      let logs = document.getElementById('chatLogs');
+      
+      // User msg
+      let userDiv = document.createElement('div');
+      userDiv.className = "flex gap-3 max-w-[85%] ml-auto flex-row-reverse";
+      userDiv.innerHTML = `
+        <div class="w-7 h-7 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold shrink-0">U</div>
+        <div class="p-3 bg-blue-500/5 border border-blue-500/10 text-slate-200 rounded-xl">${inputVal}</div>
+      `;
+      logs.appendChild(userDiv);
+      logs.scrollTop = logs.scrollHeight;
+
+      // Simulated AI Reply after a small delay
+      setTimeout(() => {
+        let aiReply = "Thank you for asking. Based on weighted metric checks, we analyzed that the query is relevant to mutual fund analysis. Let me assist you with financial details.";
+        if (inputVal.toLowerCase().includes("compare")) {
+          aiReply = "**Comparing Funds**: Parag Parikh Flexi Cap Fund vs SBI Bluechip Fund. Parag Parikh leads with a Sharpe ratio of 1.72 (vs 1.30) and an alpha of 5.4% (vs 2.1%). However, SBI Bluechip has a lower expense ratio of 0.90% vs Parag Parikh's 0.70% direct plan equivalent.";
+        } else if (inputVal.toLowerCase().includes("tax")) {
+          aiReply = "**Taxation Rules**: Equity mutual funds have a 15% STCG flat tax if sold within 1 year, and a 12.5% LTCG flat tax on gains above INR 1.25 Lakh per financial year. Debt funds are taxed entirely at individual income tax slab rates.";
+        }
+        
+        let aiDiv = document.createElement('div');
+        aiDiv.className = "flex gap-3 max-w-[85%]";
+        aiDiv.innerHTML = `
+          <div class="w-7 h-7 rounded bg-emerald-500 flex items-center justify-center font-bold text-slate-950 shrink-0">AI</div>
+          <div class="p-3 bg-slate-900/60 border border-white/5 text-slate-300 rounded-xl">${aiDivText = aiReply}</div>
+        `;
+        logs.appendChild(aiDiv);
+        logs.scrollTop = logs.scrollHeight;
+        
+        // Voice support play
+        if (typeof window !== "undefined" && window.speechSynthesis) {
+          let utterance = new SpeechSynthesisUtterance(aiReply.replace(/[*#`_\-]/g, "").slice(0, 150));
+          window.speechSynthesis.speak(utterance);
+        }
+      }, 800);
+    }
+
+    // Voice recognition simulator
+    function simulateVoiceInput() {
+      let micBtn = document.getElementById('micBtn');
+      micBtn.classList.add('bg-red-500/20', 'text-red-400', 'animate-pulse');
+      document.getElementById('chatInput').placeholder = "Listening...";
+      
+      setTimeout(() => {
+        micBtn.classList.remove('bg-red-500/20', 'text-red-400', 'animate-pulse');
+        document.getElementById('chatInput').placeholder = "Ask Stockify AI...";
+        document.getElementById('chatInput').value = "Compare Parag Parikh vs SBI Bluechip";
+      }, 2000);
+    }
+
+    // Initialize lucide icons on load
+    lucide.createIcons();
+  </script>
+</body>
+</html>

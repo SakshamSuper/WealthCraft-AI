@@ -1,0 +1,35 @@
+SEBI (Securities and Exchange Board of India) Mutual Fund Categorization Guidelines
+
+1. Large Cap Funds:
+- Must invest a minimum of 80% of total assets in equity and equity-related instruments of large-cap companies.
+- Large-cap companies are defined as the top 100 companies by full market capitalization listed on the stock exchanges.
+
+2. Mid Cap Funds:
+- Must invest a minimum of 65% of total assets in equity and equity-related instruments of mid-cap companies.
+- Mid-cap companies are defined as the 101st to 250th companies by full market capitalization.
+
+3. Small Cap Funds:
+- Must invest a minimum of 65% of total assets in equity and equity-related instruments of small-cap companies.
+- Small-cap companies are defined as all companies listed below the 250th position by market capitalization.
+
+4. Flexi Cap Funds:
+- Must invest a minimum of 65% of total assets in equity and equity-related instruments.
+- Dynamic asset allocation across large-cap, mid-cap, and small-cap stocks is permitted without any restriction on allocations.
+
+5. Index Funds / ETFs:
+- Must invest a minimum of 95% of total assets in securities of a particular index (e.g., NIFTY 50 or SENSEX) being replicated.
+- Tracking error must be minimized and regularly reported.
+
+6. ELSS (Equity Linked Savings Scheme):
+- Must invest a minimum of 80% of total assets in equities.
+- Lock-in period of 3 years is mandatory from the date of allotment.
+- Eligible for tax deduction under Section 80C up to INR 1,500,000 per financial year.
+
+7. Hybrid Funds (Aggressive):
+- Equity exposure must range between 65% and 80% of total assets.
+- Debt exposure must range between 20% and 35% of total assets.
+- Taxed as equity funds due to equity exposure exceeding 65%.
+
+8. Debt Funds (General):
+- Must invest a minimum of 80% of total assets in debt and money market securities of varying durations (e.g., Ultra Short, Short, Medium, Corporate, Sovereign).
+- Risk is classified by interest rate risk (Macaulay Duration) and credit risk.

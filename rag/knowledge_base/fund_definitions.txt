@@ -1,0 +1,42 @@
+Mutual Fund Financial Metrics Definitions and Interpretations
+
+1. Net Asset Value (NAV):
+- The price per unit of the mutual fund. Calculated by dividing the total value of all the cash and securities in the fund's portfolio, minus any liabilities, by the number of outstanding units.
+
+2. CAGR (Compound Annual Growth Rate):
+- The mean annual growth rate of an investment over a specified period of time longer than one year. It represents the smoothed annual return of a fund.
+
+3. Sharpe Ratio:
+- Measures risk-adjusted performance. Calculated by subtracting the risk-free rate from the fund return, divided by the fund's Standard Deviation.
+- Formula: Sharpe = (R_p - R_f) / StdDev_p
+- Interpretation: A Sharpe ratio above 1.0 is considered good; above 1.5 is very good; and above 2.0 is excellent. It indicates how much excess return is generated per unit of risk.
+
+4. Sortino Ratio:
+- A variation of the Sharpe ratio that only penalizes negative volatility (downside risk), rather than total volatility.
+- Formula: Sortino = (R_p - R_f) / DownsideDeviation_p
+- Interpretation: Particularly useful for retail investors because it focuses only on the risk of losing money. Higher is better.
+
+5. Alpha (α):
+- Measures the fund's excess return relative to the return of a benchmark index.
+- Interpretation: An alpha of 1.0 means the fund has outperformed its benchmark by 1%. Positive alpha indicates active management has added value.
+
+6. Beta (β):
+- Measures the fund's volatility relative to the broader market (benchmark index).
+- Interpretation: A beta of 1.0 indicates the fund moves in tandem with the market. A beta > 1.0 implies higher volatility than the market (e.g. Small Cap). A beta < 1.0 implies lower volatility (e.g. Large Cap or Debt).
+
+7. Standard Deviation:
+- Measures the dispersion of returns from the mean. It reflects the absolute volatility of the fund.
+- Interpretation: A higher standard deviation indicates greater price fluctuations and higher historical risk.
+
+8. Treynor Ratio:
+- Similar to the Sharpe ratio, but uses beta as the denominator instead of standard deviation.
+- Formula: Treynor = (R_p - R_f) / Beta_p
+- Interpretation: Evaluates risk-adjusted returns for diversified portfolios.
+
+9. Portfolio Turnover:
+- The rate at which the fund manager buys and sells stocks within the portfolio.
+- Interpretation: A turnover of 20% means 1/5th of the stocks were replaced in a year. Low turnover (e.g. 5-15%) indicates value-investing conviction. High turnover (e.g. >100%) indicates active trading/momentum styles, which can lead to higher transaction costs.
+
+10. Expense Ratio:
+- The annual fee charged by the fund company to manage the fund, expressed as a percentage.
+- Interpretation: Covers management fees, administrative fees, and distribution costs. Direct plans have lower expense ratios than regular plans because they bypass commission fees. Lower is always better.

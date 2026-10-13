@@ -1,0 +1,163 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0d0f12;
+  --foreground: #ffffff;
+  --font-sans: 'Inter', sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+}
+
+/* --- Groww Dark Matte Canvas --- */
+body {
+  color: var(--foreground);
+  background-color: var(--background);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+  letter-spacing: -0.01em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.015em;
+  font-weight: 700;
+}
+
+/* --- Groww Card Styling --- */
+.glass-panel {
+  background: #181b20;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  border-radius: 0.85rem;
+}
+
+.glass-panel-hover {
+  transition: all 0.25s ease-in-out;
+}
+
+.glass-panel-hover:hover {
+  background: #20242b;
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+/* --- Groww Mint Green & Text Utilities --- */
+.text-groww-green {
+  color: #00d09c !important;
+}
+
+.text-groww-red {
+  color: #eb5757 !important;
+}
+
+.bg-groww-green {
+  background-color: #00d09c !important;
+}
+
+.gradient-heading {
+  color: #ffffff;
+}
+
+/* --- Custom Scrollbar Groww Style --- */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0d0f12;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #20242b;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00d09c;
+}
+
+/* --- Light Mode Tuning --- */
+html.light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+body.light {
+  color: var(--foreground);
+  background-color: var(--background);
+}
+
+.light .glass-panel {
+  background: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+
+.light .glass-panel-hover:hover {
+  background: #f8fafc !important;
+  border-color: rgba(0, 208, 156, 0.4) !important;
+}
+
+.light .bg-slate-900,
+.light .bg-slate-900\/50,
+.light .bg-slate-950,
+.light .bg-slate-950\/40,
+.light .bg-slate-950\/60,
+.light .bg-slate-950\/70,
+.light .bg-slate-950\/80 {
+  background-color: #ffffff !important;
+}
+
+.light .border-white\/5,
+.light .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+.light .text-white,
+.light h1, .light h2, .light h3, .light h4, .light h5, .light h6 {
+  color: #0f172a !important;
+}
+
+.light .text-slate-100,
+.light .text-slate-200,
+.light .text-slate-300 {
+  color: #1e293b !important;
+}
+
+.light .text-slate-400 {
+  color: #475569 !important;
+}
+
+.light .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* Form inputs light mode */
+.light input,
+.light select,
+.light textarea {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+/* Table styling light mode */
+.light th {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+.light td {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05) !important;
+  color: #334155 !important;
+}
+
+.light tr:hover td {
+  background-color: #f1f5f9 !important;
+}

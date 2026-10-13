@@ -1,0 +1,26 @@
+Mutual Fund Taxation Rules (Latest Indian Financial Regulations)
+
+1. Equity-Oriented Mutual Funds (Funds with >65% allocation in domestic equities):
+- Short-Term Capital Gains (STCG):
+  - Applicable if the units are held and sold within 1 year of investment.
+  - Tax Rate: 15% flat rate on gains.
+- Long-Term Capital Gains (LTCG):
+  - Applicable if the units are held and sold after 1 year of investment.
+  - Tax Rate: 12.5% on gains exceeding INR 1.25 Lakh (125,000 INR) in a single financial year. Gains below INR 1.25 Lakh are fully tax-exempt.
+
+2. Debt-Oriented Mutual Funds (Funds with <35% allocation in equities):
+- Short-Term & Long-Term Capital Gains:
+  - There is no distinction between short-term and long-term holding periods for debt funds purchased after April 1, 2023.
+  - Tax Rate: All gains are added directly to the investor's taxable income and taxed according to their applicable individual income tax slab rates (e.g., 5%, 20%, or 30%).
+  - Indexation benefits are no longer available for debt mutual funds.
+
+3. Hybrid Mutual Funds:
+- Aggressive Hybrid & Dynamic Asset Allocation Funds (Equity allocation average >= 65%):
+  - Taxed exactly like Equity-Oriented Mutual Funds (15% STCG under 1 year, 12.5% LTCG over 1 year after 1.25L exemption).
+- Conservative Hybrid Funds (Equity allocation < 35%):
+  - Taxed exactly like Debt-Oriented Mutual Funds (taxed at slab rates regardless of holding period).
+
+4. ELSS (Equity Linked Savings Schemes):
+- Tax Deduction: Investments qualify for tax deductions up to INR 1.5 Lakhs per year under Section 80C of the Income Tax Act.
+- Holding Period: Strictly locked for 3 years. STCG is not possible.
+- Taxation: All withdrawals after 3 years are subject to LTCG rules (12.5% tax on gains exceeding INR 1.25 Lakh per financial year).
