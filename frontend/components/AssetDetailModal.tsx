@@ -62,14 +62,17 @@ export default function AssetDetailModal({ isOpen, onClose, fundId, initialFund 
         api.getFundPeers(id).catch(() => [])
       ]);
 
+      if (historyData && Array.isArray(historyData)) {
+        const normalized = historyData.map((h: any) => ({
+          date: h.date,
+          NAV: Number(h.nav ?? h.NAV ?? 100),
+          nav: Number(h.nav ?? h.NAV ?? 100)
+        }));
+        setNavHistory(normalized);
+      }
       if (fundData) {
         setFund(fundData);
-        if (fundData.initial_nav || (historyData && historyData.length > 0)) {
-          const lastPrice = historyData.length > 0 ? historyData[historyData.length - 1].NAV : (fundData.initial_nav || 100);
-          setPurchasePrice(lastPrice);
-        }
       }
-      if (historyData) setNavHistory(historyData);
       if (forecastData) setForecast(forecastData);
       if (peersData) setPeers(peersData);
     } catch (err) {
@@ -102,13 +105,14 @@ export default function AssetDetailModal({ isOpen, onClose, fundId, initialFund 
 
   if (!isOpen || !fundId) return null;
 
-  // Computed price metrics from database & nav history
-  const curPrice = navHistory.length > 0 ? navHistory[navHistory.length - 1].NAV : (fund?.initial_nav || fund?.min_lumpsum || 765.40);
+  // Computed price metrics from database & nav history with bulletproof defaults
+  const validNavs = (navHistory || []).map((n: any) => Number(n?.NAV ?? n?.nav ?? 0)).filter((v: number) => !isNaN(v) && v > 0);
+  const curPrice = validNavs.length > 0 ? validNavs[validNavs.length - 1] : Number(fund?.initial_nav || fund?.min_lumpsum || 2845.50);
   const prevClose = curPrice * 0.988;
   const dayLow = curPrice * 0.982;
   const dayHigh = curPrice * 1.015;
-  const yearLow = fund?.low_52w || (navHistory.length > 0 ? Math.min(...navHistory.map((n: any) => n.NAV)) : curPrice * 0.75);
-  const yearHigh = fund?.high_52w || (navHistory.length > 0 ? Math.max(...navHistory.map((n: any) => n.NAV)) : curPrice * 1.25);
+  const yearLow = Number(fund?.low_52w || (validNavs.length > 0 ? Math.min(...validNavs) : curPrice * 0.75));
+  const yearHigh = Number(fund?.high_52w || (validNavs.length > 0 ? Math.max(...validNavs) : curPrice * 1.25));
   const dayPosPct = Math.min(100, Math.max(0, ((curPrice - dayLow) / (dayHigh - dayLow || 1)) * 100));
   const yearPosPct = Math.min(100, Math.max(0, ((curPrice - yearLow) / (yearHigh - yearLow || 1)) * 100));
 

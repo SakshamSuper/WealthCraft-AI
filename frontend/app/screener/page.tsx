@@ -151,8 +151,8 @@ function ScreenerPageContent() {
   if (!mounted) return null;
 
   const filteredFunds = funds.filter((f) => {
-    const isStock = f.category === "Listed Stock" || f.category === "Stock" || f.category === "Equity Stock" || (f.ticker && (f.ticker.endsWith(".NS") || f.ticker.endsWith(".BO")));
-    const isETF = (f.category && f.category.toLowerCase().includes("etf")) || (f.name && f.name.toLowerCase().includes("etf"));
+    const isETF = (f.category && f.category.toLowerCase().includes("etf")) || (f.name && f.name.toLowerCase().includes("etf")) || (f.ticker && f.ticker.toLowerCase().includes("bees"));
+    const isStock = ((f.category === "Listed Stock" || f.category === "Stock" || f.category === "Equity Stock") || (f.ticker && (f.ticker.endsWith(".NS") || f.ticker.endsWith(".BO")))) && !isETF;
     const isMF = !isStock && !isETF;
 
     if (assetType === "STOCKS") return isStock;
