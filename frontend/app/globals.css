@@ -46,40 +46,53 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* --- Groww Mint Green & Text Utilities --- */
-.text-groww-green {
-  color: #00d09c !important;
-}
-
-.text-groww-red {
-  color: #eb5757 !important;
-}
-
-.bg-groww-green {
-  background-color: #00d09c !important;
-}
-
-.gradient-heading {
-  color: #ffffff;
-}
+.text-groww-green { color: #00d09c !important; }
+.text-groww-red { color: #eb5757 !important; }
+.bg-groww-green { background-color: #00d09c !important; }
+.gradient-heading { color: #ffffff; }
 
 /* --- Custom Scrollbar Groww Style --- */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #0d0f12; }
+::-webkit-scrollbar-thumb { background: #20242b; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #00d09c; }
+
+/* Hide scrollbar but keep scroll */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* --- Keyboard accessibility: visible focus ring --- */
+:focus-visible {
+  outline: 2px solid #00d09c;
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
-::-webkit-scrollbar-track {
-  background: #0d0f12;
+/* Suppress focus ring for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #20242b;
-  border-radius: 9999px;
+/* --- Animations for modals and drawers --- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #00d09c;
+@keyframes zoomIn95 {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
+
+@keyframes slideInBottom {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in { animation: fadeIn 0.2s ease-out; }
+.animate-fade-in { animation: fadeIn 0.2s ease-out; }
+.zoom-in-95 { animation: zoomIn95 0.2s ease-out; }
+.slide-in-bottom { animation: slideInBottom 0.25s ease-out; }
 
 /* --- Light Mode Tuning --- */
 html.light {
@@ -129,13 +142,8 @@ body.light {
   color: #1e293b !important;
 }
 
-.light .text-slate-400 {
-  color: #475569 !important;
-}
-
-.light .text-slate-500 {
-  color: #64748b !important;
-}
+.light .text-slate-400 { color: #475569 !important; }
+.light .text-slate-500 { color: #64748b !important; }
 
 /* Form inputs light mode */
 .light input,

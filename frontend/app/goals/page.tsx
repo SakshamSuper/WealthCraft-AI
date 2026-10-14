@@ -63,11 +63,27 @@ export default function GoalsPage() {
   };
 
   const runSipSimulation = async () => {
+    // Try backend first, fall back to local computation
     try {
       const data = await api.simulateSip(sipAmount, cagr, years, inflation);
       setSipCalculation(data);
     } catch (err) {
-      console.error(err);
+      // Local fallback using standard SIP compounding formula
+      const P = sipAmount;
+      const r = (cagr / 100) / 12;
+      const n = years * 12;
+      const futureValue = r === 0 ? P * n : P * ((Math.pow(1 + r, n) - 1) / r) * (1 + r);
+      const totalInvested = P * n;
+      const wealthGained = Math.max(0, futureValue - totalInvested);
+      const infR = inflation / 100;
+      const inflationAdjusted = futureValue / Math.pow(1 + infR, years);
+      setSipCalculation({
+        future_value: Math.round(futureValue),
+        total_invested: Math.round(totalInvested),
+        wealth_gained: Math.round(wealthGained),
+        inflation_adjusted_value: Math.round(inflationAdjusted),
+        goal_completion_probability: Math.max(35, Math.min(99, 85 - (cagr / 5) + (years / 4))),
+      });
     }
   };
 

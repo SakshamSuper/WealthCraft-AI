@@ -56,11 +56,19 @@ export default function PortfolioPage() {
     try {
       const port = await api.getPortfolio();
       setPortfolio(port);
-      
-      const opt = await api.optimizePortfolio();
-      setOptimizerData(opt);
+
+      // Optimizer is optional — silently fail if backend unavailable
+      try {
+        const opt = await api.optimizePortfolio();
+        setOptimizerData(opt);
+      } catch (optErr) {
+        console.warn("Portfolio optimizer unavailable (backend offline or no holdings):", optErr);
+        setOptimizerData(null);
+      }
     } catch (err) {
       console.error(err);
+      // Set empty portfolio so the page still renders
+      setPortfolio({ items: [], total_invested: 0, current_value: 0, absolute_return: 0, absolute_return_pct: 0, xirr: 0, allocation: {} });
     } finally {
       setLoading(false);
     }
@@ -181,12 +189,17 @@ export default function PortfolioPage() {
   }
 
   // Format category allocations for bar chart comparison
-  const categoriesList = optimizerData?.metrics?.target_allocation ? Object.keys(optimizerData.metrics.target_allocation) : [];
+  const categoriesList = optimizerData?.metrics?.target_allocation
+    ? Object.keys(optimizerData.metrics.target_allocation)
+    : [];
   const allocationChartData = categoriesList.map((cat: string) => ({
     name: cat,
-    Current: optimizerData?.metrics?.current_allocation[cat] || 0.0,
-    Target: optimizerData?.metrics?.target_allocation[cat] || 0.0,
+    Current: optimizerData?.metrics?.current_allocation?.[cat] || 0.0,
+    Target: optimizerData?.metrics?.target_allocation?.[cat] || 0.0,
   }));
+
+  const hasHoldings = (portfolio?.items?.length || 0) > 0;
+
 
   return (
     <div className="space-y-6">
@@ -201,28 +214,43 @@ export default function PortfolioPage() {
         <div className="glass-panel p-5 bg-slate-950/40">
           <div className="text-[10px] text-slate-500 font-semibold uppercase">Total Current Value</div>
           <div className="font-heading font-bold text-2xl text-white mt-1">
-            INR {portfolio?.current_value?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            {hasHoldings ? `₹${portfolio?.current_value?.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : <span className="text-slate-600">₹0.00</span>}
           </div>
+          {!hasHoldings && <span className="text-[10px] text-slate-600">Add holdings to track value</span>}
         </div>
         <div className="glass-panel p-5 bg-slate-950/40">
-          <div className="text-[10px] text-slate-500 font-semibold uppercase">Total Invested Principal</div>
+          <div className="text-[10px] text-slate-500 font-semibold uppercase">Total Invested</div>
           <div className="font-heading font-bold text-2xl text-white mt-1">
-            INR {portfolio?.total_invested?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            {hasHoldings ? `₹${portfolio?.total_invested?.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : <span className="text-slate-600">₹0.00</span>}
           </div>
+          {!hasHoldings && <span className="text-[10px] text-slate-600">No transactions yet</span>}
         </div>
         <div className="glass-panel p-5 bg-slate-950/40">
           <div className="text-[10px] text-slate-500 font-semibold uppercase">Absolute Returns</div>
-          <div className={`font-heading font-bold text-2xl mt-1 ${portfolio?.absolute_return >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-            INR {portfolio?.absolute_return?.toLocaleString(undefined, { minimumFractionDigits: 2 })} 
-            <span className="text-xs font-semibold ml-1">({portfolio?.absolute_return_pct}%)</span>
-          </div>
+          {hasHoldings ? (
+            <div className={`font-heading font-bold text-2xl mt-1 ${(portfolio?.absolute_return || 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+              ₹{portfolio?.absolute_return?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              <span className="text-xs font-semibold ml-1">({portfolio?.absolute_return_pct}%)</span>
+            </div>
+          ) : (
+            <div className="font-heading font-bold text-2xl mt-1 text-slate-600">—</div>
+          )}
+          {!hasHoldings && <span className="text-[10px] text-slate-600">Calculated from holdings</span>}
         </div>
         <div className="glass-panel p-5 bg-slate-950/40">
           <div className="text-[10px] text-slate-500 font-semibold uppercase">Annualized Returns (XIRR)</div>
-          <div className="font-heading font-bold text-2xl text-white mt-1 flex items-center gap-1.5">
-            <TrendingUp className="text-emerald-400" size={20} />
-            {portfolio?.xirr}%
-          </div>
+          {hasHoldings ? (
+            <div className="font-heading font-bold text-2xl text-white mt-1 flex items-center gap-1.5">
+              <TrendingUp className="text-emerald-400" size={20} />
+              {portfolio?.xirr ?? 0}%
+            </div>
+          ) : (
+            <div className="font-heading font-bold text-2xl mt-1 text-slate-600 flex items-center gap-1.5">
+              <TrendingUp className="text-slate-700" size={20} />
+              N/A
+            </div>
+          )}
+          {!hasHoldings && <span className="text-[10px] text-slate-600">Requires at least 1 holding</span>}
         </div>
       </div>
 

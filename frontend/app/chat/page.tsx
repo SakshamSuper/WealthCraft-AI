@@ -111,10 +111,33 @@ export default function ChatPage() {
     }
   };
 
+  const OFFLINE_RESPONSES: Record<string, string> = {
+    xirr: "**XIRR (Extended IRR)** measures the annualized return of your portfolio accounting for the exact dates of each cash flow. A healthy equity XIRR over 5+ years is typically 12–18%. Use the Portfolio page to see your live XIRR once holdings are added.",
+    sip: "**SIP (Systematic Investment Plan)** is a disciplined way to invest a fixed amount monthly. With ₹10,000/month at 12% CAGR for 15 years, you'd accumulate ~₹50 Lakh. Use the Goals page SIP calculator to simulate your plan.",
+    elss: "**ELSS (Equity Linked Savings Scheme)** funds qualify for ₹1.5L deduction under Section 80C. They have a 3-year lock-in (shortest among 80C options). Top picks: Mirae Asset Tax Saver, Canara Robeco Equity Tax Saver, Quant Tax Plan.",
+    tax: "**LTCG Tax (Section 112A):** Equity gains above ₹1,25,000 per year are taxed at 12.5%. **STCG (Section 111A):** Gains within 1 year are taxed at 20%. Use the Tax Harvesting tool in Portfolio to optimize your liability before March 31.",
+    rebalance: "Rebalancing restores your target asset allocation. Example: if equity drifts from 70% to 85%, sell some equity and buy debt. Ideally rebalance annually or when allocation drifts >5% from target.",
+    nifty: "**NIFTY 50** tracks the 50 largest companies on NSE. As of recent trading, NIFTY 50 is around 25,000–25,500 levels. For real-time prices, check NSE India or MoneyControl.",
+    inflation: "India's CPI inflation typically runs 4–6%. At 6% inflation, ₹1 Lakh today is worth only ₹55,840 in 10 years — which is why equity returns of 12%+ are essential to preserve purchasing power.",
+    default: "I'm running in **offline mode** — the backend AI engine is not reachable right now. I can still answer general finance questions! Try asking about: XIRR, SIP calculations, ELSS tax saving, LTCG/STCG rules, portfolio rebalancing, or NIFTY index levels.",
+  };
+
+  const getOfflineResponse = (query: string): string => {
+    const q = query.toLowerCase();
+    if (q.includes("xirr") || q.includes("irr") || q.includes("return")) return OFFLINE_RESPONSES.xirr;
+    if (q.includes("sip") || q.includes("monthly invest") || q.includes("systematic")) return OFFLINE_RESPONSES.sip;
+    if (q.includes("elss") || q.includes("80c") || q.includes("tax sav") || q.includes("tax saving")) return OFFLINE_RESPONSES.elss;
+    if (q.includes("tax") || q.includes("ltcg") || q.includes("stcg") || q.includes("112a")) return OFFLINE_RESPONSES.tax;
+    if (q.includes("rebalanc") || q.includes("allocation")) return OFFLINE_RESPONSES.rebalance;
+    if (q.includes("nifty") || q.includes("sensex") || q.includes("market")) return OFFLINE_RESPONSES.nifty;
+    if (q.includes("inflation") || q.includes("purchasing power")) return OFFLINE_RESPONSES.inflation;
+    return OFFLINE_RESPONSES.default;
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || sending) return;
-    
+
     const userMsg = input.trim();
     setInput("");
     setSending(true);
@@ -127,17 +150,16 @@ export default function ChatPage() {
 
     try {
       const res = await api.sendChatMessage(userMsg);
-      // Append assistant answer
       setMessages((prev) => [...prev, res]);
     } catch (err) {
-      console.error(err);
+      // Smart offline fallback — still useful even when backend is down
       setMessages((prev) => [
         ...prev,
-        { 
-          id: Date.now() + 1, 
-          role: "assistant", 
-          content: "❌ Sorry, I encountered an issue processing your query. Please verify that the FastAPI backend server is running.", 
-          timestamp: new Date().toISOString() 
+        {
+          id: Date.now() + 1,
+          role: "assistant",
+          content: getOfflineResponse(userMsg),
+          timestamp: new Date().toISOString()
         }
       ]);
     } finally {
@@ -157,8 +179,8 @@ export default function ChatPage() {
         <div className="flex items-center gap-2 border-b border-white/5 pb-3.5 mb-4 shrink-0">
           <MessageSquare className="text-emerald-400" size={18} />
           <div>
-            <h2 className="font-heading font-bold text-white text-base leading-none">AI Wealth Advisor</h2>
-            <span className="text-[9px] text-slate-500 mt-1 block">RAG financial database compliance checks enabled</span>
+            <h2 className="font-heading font-bold text-white text-base leading-none">WealthCraft AI Advisor</h2>
+            <span className="text-[9px] text-slate-500 mt-1 block">Powered by agent orchestration · Finance-grounded responses</span>
           </div>
         </div>
 
@@ -167,18 +189,24 @@ export default function ChatPage() {
           {loading ? (
             <div className="py-20 text-center">
               <RefreshCw className="animate-spin text-emerald-500 mx-auto mb-2" />
-              <p className="text-slate-500">Retrieving chat log histories...</p>
+              <p className="text-slate-500">Loading chat history...</p>
             </div>
           ) : messages.length === 0 ? (
-            <div className="py-20 text-center text-slate-500 space-y-3 max-w-sm mx-auto">
+            <div className="py-16 text-center text-slate-500 space-y-3 max-w-sm mx-auto">
               <Sparkles className="text-emerald-400 mx-auto" size={24} />
-              <p>Hello! I am your Stockify AI Orchestrator. Ask me anything about matching funds, performance comparisons, capital gains tax rules, or rebalancing plans.</p>
+              <p className="text-sm font-medium text-slate-300">Hello! I&apos;m your WealthCraft AI Advisor.</p>
+              <p className="text-xs">Ask me about fund comparisons, tax rules, portfolio rebalancing, SIP planning, or XIRR analysis.</p>
               <div className="flex flex-wrap gap-1.5 justify-center pt-2">
-                {["Compare HDFC Top 100 vs SBI Bluechip", "What is my XIRR return?", "Suggest ELSS funds for 80C Tax saving"].map((hint) => (
+                {[
+                  "What is XIRR and how is it calculated?",
+                  "Explain LTCG tax rules for FY 2026-27",
+                  "Suggest ELSS funds for 80C deduction",
+                  "How should I rebalance my portfolio?",
+                ].map((hint) => (
                   <button
                     key={hint}
                     onClick={() => setInput(hint)}
-                    className="px-2.5 py-1 bg-white/5 border border-white/10 hover:border-emerald-500/30 rounded text-[10px] text-slate-300"
+                    className="px-2.5 py-1 bg-white/5 border border-white/10 hover:border-emerald-500/30 hover:text-white rounded-lg text-[10px] text-slate-400 transition-colors text-left"
                   >
                     {hint}
                   </button>

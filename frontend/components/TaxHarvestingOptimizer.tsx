@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldCheck, IndianRupee, Info, CheckCircle2, ArrowRight, Sparkles, TrendingUp } from "lucide-react";
+import { ShieldCheck, Info, CheckCircle2, ArrowRight, Sparkles, PlusCircle } from "lucide-react";
 
 interface TaxHarvestingOptimizerProps {
   portfolioItems?: any[];
@@ -10,25 +10,71 @@ interface TaxHarvestingOptimizerProps {
 export default function TaxHarvestingOptimizer({ portfolioItems = [] }: TaxHarvestingOptimizerProps) {
   const [harvestSimulated, setHarvestSimulated] = useState(false);
 
-  // Indian Section 112A annual tax-free LTCG limit
+  // Indian Section 112A annual tax-free LTCG limit (FY 2026-27)
   const ANNUAL_LTCG_EXEMPTION = 125000; // ₹1.25 Lakh
   const LTCG_TAX_RATE = 0.125; // 12.5%
 
-  // Compute unrealized gains from portfolio or default simulated demo
-  const sampleHoldings = portfolioItems.length > 0 ? portfolioItems : [
-    { fund_name: "Reliance Industries Ltd", units: 30, purchase_price: 1180, current_nav: 1303.70, days: 420 },
-    { fund_name: "HDFC Top 100 Fund", units: 150, purchase_price: 720, current_nav: 839.43, days: 395 },
-    { fund_name: "Bharti Airtel Ltd", units: 25, purchase_price: 1520, current_nav: 1645.20, days: 210 },
-  ];
+  // === EMPTY PORTFOLIO STATE ===
+  if (portfolioItems.length === 0) {
+    return (
+      <div className="glass-panel p-6 bg-slate-950/60 border border-white/10 rounded-2xl">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-400 border border-emerald-500/30">
+            <ShieldCheck size={22} />
+          </div>
+          <div>
+            <h2 className="text-xl font-heading font-extrabold text-white flex items-center gap-2">
+              Tax Harvesting &amp; LTCG Optimizer
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                Section 112A (FY 2026-27)
+              </span>
+            </h2>
+            <p className="text-xs text-slate-400">
+              Harvest up to ₹1,25,000 in long-term gains tax-free before March 31.
+            </p>
+          </div>
+        </div>
 
+        <div className="flex flex-col items-center justify-center py-10 text-center space-y-4 border border-dashed border-white/10 rounded-xl bg-white/[0.01]">
+          <div className="p-4 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <ShieldCheck size={28} className="text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-white font-bold text-sm">No Holdings to Analyze</p>
+            <p className="text-slate-500 text-xs mt-1 max-w-xs">
+              Add portfolio transactions above to unlock your personalized tax harvesting plan
+              and see how much you can legally save under Section 112A.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-slate-400">
+            <Info size={13} className="text-emerald-400 shrink-0" />
+            <span>FY 2026-27 LTCG exemption: <strong className="text-white">₹1,25,000</strong> at <strong className="text-white">12.5%</strong> tax rate</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // === COMPUTE GAINS FROM REAL HOLDINGS ===
   let totalUnrealizedLTCG = 0;
   let totalUnrealizedSTCG = 0;
 
-  const harvestableList = sampleHoldings.map((item: any) => {
+  // Estimate holding days from purchase_date if available
+  const today = new Date();
+  const harvestableList = portfolioItems.map((item: any) => {
     const invested = item.units * item.purchase_price;
-    const currentVal = item.units * (item.current_nav || item.purchase_price);
+    const currentNav = item.current_nav || item.purchase_price;
+    const currentVal = item.units * currentNav;
     const gain = Math.max(0, currentVal - invested);
-    const isLTCG = (item.days || 400) > 365;
+
+    // Calculate actual days held
+    let holdingDays = item.days || 0;
+    if (!holdingDays && item.purchase_date) {
+      const purchaseDate = new Date(item.purchase_date);
+      holdingDays = Math.floor((today.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
+    const isLTCG = holdingDays > 365;
 
     if (isLTCG) totalUnrealizedLTCG += gain;
     else totalUnrealizedSTCG += gain;
@@ -37,10 +83,10 @@ export default function TaxHarvestingOptimizer({ portfolioItems = [] }: TaxHarve
       name: item.fund_name,
       units: item.units,
       purchasePrice: item.purchase_price,
-      currentPrice: item.current_nav,
+      currentPrice: currentNav,
       gain,
+      holdingDays,
       isLTCG,
-      harvestableUnits: isLTCG ? item.units : 0,
       harvestableGain: isLTCG ? gain : 0,
     };
   });
@@ -59,13 +105,13 @@ export default function TaxHarvestingOptimizer({ portfolioItems = [] }: TaxHarve
           </div>
           <div>
             <h2 className="text-xl font-heading font-extrabold text-white flex items-center gap-2">
-              Tax Harvesting & LTCG Optimizer
+              Tax Harvesting &amp; LTCG Optimizer
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 Section 112A (FY 2026-27)
               </span>
             </h2>
             <p className="text-xs text-slate-400">
-              Harvest up to ₹1,25,000 in long-term gains tax-free before March 31 to reset your purchase cost basis.
+              Harvest up to ₹1,25,000 in long-term gains tax-free before March 31 to reset your cost basis.
             </p>
           </div>
         </div>
@@ -89,7 +135,9 @@ export default function TaxHarvestingOptimizer({ portfolioItems = [] }: TaxHarve
           <div className="text-xl font-heading font-bold text-emerald-400 mt-1">
             ₹{Math.round(totalUnrealizedLTCG).toLocaleString()}
           </div>
-          <span className="text-[10px] text-emerald-500 mt-1 block">Eligible for 0% tax harvest</span>
+          <span className="text-[10px] text-emerald-500 mt-1 block">
+            {totalUnrealizedLTCG > 0 ? "Eligible for tax-free harvest" : "No LTCG holdings yet"}
+          </span>
         </div>
 
         <div className="p-4 rounded-xl bg-slate-900/60 border border-white/5">
@@ -101,11 +149,13 @@ export default function TaxHarvestingOptimizer({ portfolioItems = [] }: TaxHarve
         </div>
 
         <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/30">
-          <span className="text-xs text-emerald-300 font-semibold block">Net Tax Saved</span>
+          <span className="text-xs text-emerald-300 font-semibold block">Est. Tax Saved</span>
           <div className="text-2xl font-heading font-black text-emerald-400 mt-1">
-            +₹{Math.round(potentialTaxSaved).toLocaleString()}
+            ₹{Math.round(potentialTaxSaved).toLocaleString()}
           </div>
-          <span className="text-[10px] text-emerald-300/70 mt-1 block">Direct tax exemption gained</span>
+          <span className="text-[10px] text-emerald-300/70 mt-1 block">
+            {potentialTaxSaved > 0 ? "Via Section 112A harvest" : "Add transactions to see savings"}
+          </span>
         </div>
       </div>
 
@@ -113,7 +163,9 @@ export default function TaxHarvestingOptimizer({ portfolioItems = [] }: TaxHarve
       <div className="space-y-2 p-4 rounded-xl bg-white/[0.02] border border-white/5">
         <div className="flex justify-between text-xs">
           <span className="text-slate-300 font-semibold">Exemption Utilization</span>
-          <span className="text-emerald-400 font-mono font-bold">{utilizedPct}% (₹{Math.round(totalUnrealizedLTCG).toLocaleString()} / ₹1,25,000)</span>
+          <span className="text-emerald-400 font-mono font-bold">
+            {utilizedPct}% (₹{Math.round(totalUnrealizedLTCG).toLocaleString()} / ₹1,25,000)
+          </span>
         </div>
         <div className="h-2.5 w-full bg-slate-800 rounded-full overflow-hidden border border-white/5">
           <div
@@ -123,13 +175,13 @@ export default function TaxHarvestingOptimizer({ portfolioItems = [] }: TaxHarve
         </div>
       </div>
 
-      {/* Recommended Harvesting Actions Table */}
+      {/* Holdings Table */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-            Eligible Holdings for Tax-Loss / Gain Harvesting
+            Your Holdings — Tax Analysis
           </h3>
-          <span className="text-[11px] text-slate-500">Sell & Rebuy on same/next day</span>
+          <span className="text-[11px] text-slate-500">Sell &amp; Rebuy on same/next day</span>
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-white/10 bg-slate-900/50">
@@ -137,22 +189,24 @@ export default function TaxHarvestingOptimizer({ portfolioItems = [] }: TaxHarve
             <thead>
               <tr className="border-b border-white/10 text-slate-400 bg-white/[0.02]">
                 <th className="py-2.5 px-4 font-semibold">Holding</th>
-                <th className="py-2.5 px-4 font-semibold text-right">Holding Units</th>
+                <th className="py-2.5 px-4 font-semibold text-right">Units</th>
                 <th className="py-2.5 px-4 font-semibold text-right">Avg Cost</th>
-                <th className="py-2.5 px-4 font-semibold text-right">Current LTP</th>
-                <th className="py-2.5 px-4 font-semibold text-right text-emerald-400">Harvestable Gain</th>
-                <th className="py-2.5 px-4 font-semibold text-right">Tax Status</th>
+                <th className="py-2.5 px-4 font-semibold text-right">Current NAV</th>
+                <th className="py-2.5 px-4 font-semibold text-right">Days Held</th>
+                <th className="py-2.5 px-4 font-semibold text-right text-emerald-400">Unrealized Gain</th>
+                <th className="py-2.5 px-4 font-semibold text-right">Tax Type</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {harvestableList.map((item, idx) => (
                 <tr key={idx} className="hover:bg-white/[0.02]">
-                  <td className="py-2.5 px-4 font-bold text-white">{item.name}</td>
+                  <td className="py-2.5 px-4 font-bold text-white max-w-[180px] truncate">{item.name}</td>
                   <td className="py-2.5 px-4 text-right font-mono text-slate-300">{item.units}</td>
                   <td className="py-2.5 px-4 text-right font-mono text-slate-300">₹{item.purchasePrice}</td>
                   <td className="py-2.5 px-4 text-right font-mono text-slate-300">₹{item.currentPrice}</td>
-                  <td className="py-2.5 px-4 text-right font-mono font-bold text-emerald-400">
-                    +₹{Math.round(item.gain).toLocaleString()}
+                  <td className="py-2.5 px-4 text-right font-mono text-slate-400">{item.holdingDays}d</td>
+                  <td className={`py-2.5 px-4 text-right font-mono font-bold ${item.gain > 0 ? "text-emerald-400" : "text-red-400"}`}>
+                    {item.gain > 0 ? "+" : ""}₹{Math.round(item.gain).toLocaleString()}
                   </td>
                   <td className="py-2.5 px-4 text-right">
                     <span
@@ -162,7 +216,7 @@ export default function TaxHarvestingOptimizer({ portfolioItems = [] }: TaxHarve
                           : "bg-blue-500/10 border-blue-500/20 text-blue-400"
                       }`}
                     >
-                      {item.isLTCG ? "LTCG (Tax-Free)" : "STCG (< 1 Yr)"}
+                      {item.isLTCG ? "LTCG (≥1 Yr)" : "STCG (<1 Yr)"}
                     </span>
                   </td>
                 </tr>
@@ -172,38 +226,38 @@ export default function TaxHarvestingOptimizer({ portfolioItems = [] }: TaxHarve
         </div>
       </div>
 
-      {/* Simulation Result / CTA */}
+      {/* CTA */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-gradient-to-r from-emerald-950/20 to-slate-900 border border-emerald-500/20">
         <div className="flex items-center gap-3">
-          <Sparkles className="text-emerald-400" size={20} />
+          <Sparkles className="text-emerald-400 shrink-0" size={20} />
           <div className="text-xs">
             <span className="font-bold text-white block">
               {harvestSimulated
-                ? "Tax Harvesting Strategy Simulated! New Purchase Base Reset."
-                : `Harvesting will save ₹${Math.round(potentialTaxSaved).toLocaleString()} in taxes this financial year.`}
+                ? "Strategy simulated. Review the table above before executing."
+                : potentialTaxSaved > 0
+                ? `Harvest now to save ₹${Math.round(potentialTaxSaved).toLocaleString()} in taxes this FY.`
+                : "Hold LTCG assets for over 1 year to maximize tax-free harvest potential."}
             </span>
             <span className="text-slate-400 block mt-0.5">
-              By booking and re-buying within your ₹1.25L limit, you legally permanently avoid paying 12.5% tax on these profits.
+              Sell eligible LTCG lots within the ₹1.25L limit, then rebuy the same assets to reset your cost basis legally.
             </span>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setHarvestSimulated(true)}
-          disabled={harvestSimulated}
-          className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1.5"
-        >
-          {harvestSimulated ? (
-            <>
-              <CheckCircle2 size={14} /> Plan Simulated
-            </>
-          ) : (
-            <>
-              Simulate Tax Harvest <ArrowRight size={14} />
-            </>
-          )}
-        </button>
+        {potentialTaxSaved > 0 && (
+          <button
+            type="button"
+            onClick={() => setHarvestSimulated(true)}
+            disabled={harvestSimulated}
+            className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-1.5"
+          >
+            {harvestSimulated ? (
+              <><CheckCircle2 size={14} /> Plan Simulated</>
+            ) : (
+              <>Simulate Tax Harvest <ArrowRight size={14} /></>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );
