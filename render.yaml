@@ -5,7 +5,7 @@ services:
     runtime: python
     region: oregon
     plan: free
-    buildCommand: "pip install -r backend/requirements.txt && python database/populate_all_market_assets.py"
+    buildCommand: "pip install -r backend/requirements.txt"
     startCommand: "uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT"
     envVars:
       - key: DATABASE_URL
@@ -15,18 +15,27 @@ services:
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "11520"
 
-  # Next.js 15 Full-Stack Frontend
+  # Next.js 15 Static Export Frontend
   - type: web
     name: wealthcraft-frontend
-    runtime: node
+    runtime: static
     region: oregon
     plan: free
     rootDir: frontend
     buildCommand: "npm install && npm run build"
-    startCommand: "npm run start"
+    staticPublishPath: "./out"
+    pullRequestPreviewsEnabled: false
+    routes:
+      - type: rewrite
+        source: "/*"
+        destination: "/index.html"
+    headers:
+      - path: "/*"
+        name: "Cache-Control"
+        value: "public, max-age=0, must-revalidate"
+      - path: "/_next/static/*"
+        name: "Cache-Control"
+        value: "public, max-age=31536000, immutable"
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          type: web
-          name: wealthcraft-backend
-          property: host
+        value: "https://wealthcraft-backend.onrender.com/api/v1"

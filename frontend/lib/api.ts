@@ -7,27 +7,28 @@ import { filterMarketMovers, TRENDING_SECTORS } from "./marketData";
  * 2. Fall back to localhost for local development
  * 3. Return empty string (offline/static mode) when no backend is configured
  *
- * To configure production backend: set NEXT_PUBLIC_API_URL=https://your-backend.com/api/v1
+ * To connect a backend: set NEXT_PUBLIC_API_URL in Vercel / Render env vars
  */
 const getBaseUrl = (): string => {
-  // Env var takes priority (set in Vercel/Render dashboard)
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
   }
-  // Local development
   if (typeof window !== "undefined") {
     const { hostname } = window.location;
     if (hostname === "localhost" || hostname === "127.0.0.1") {
       return "http://127.0.0.1:8000/api/v1";
     }
   }
-  // Production with no backend configured — use offline fallback data
   return "";
 };
 
 const BASE_URL = getBaseUrl();
 
-// Whether we have a reachable backend configured
+/**
+ * True only when a real backend URL is configured.
+ * When false, all API methods return offline fallback data immediately
+ * without making any network requests (prevents 404 floods on static hosting).
+ */
 const HAS_BACKEND = BASE_URL !== "";
 
 const getHeaders = () => {
@@ -35,20 +36,39 @@ const getHeaders = () => {
     "Content-Type": "application/json",
     "Bypass-Tunnel-Reminder": "true",
   };
-  
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("wealthcraft_token") || localStorage.getItem("stockify_token");
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
+    if (token) headers["Authorization"] = `Bearer ${token}`;
   }
-  
   return headers;
 };
 
+// Shared offline portfolio response
+const EMPTY_PORTFOLIO = {
+  items: [],
+  total_invested: 0.0,
+  current_value: 0.0,
+  absolute_return: 0.0,
+  absolute_return_pct: 0.0,
+  xirr: 0.0,
+  allocation: {},
+};
+
+// Shared offline market indices
+const OFFLINE_INDICES = [
+  { name: "NIFTY", symbol: "^NSEI", price: 25112.40, change: 288.6, change_pct: 1.16 },
+  { name: "SENSEX", symbol: "^BSESN", price: 82245.50, change: 817.12, change_pct: 1.00 },
+  { name: "BANKNIFTY", symbol: "^NSEBANK", price: 55347.25, change: 429.25, change_pct: 0.78 },
+  { name: "MIDCPNIFTY", symbol: "^NSEMDCP50", price: 17042.85, change: 215.15, change_pct: 1.28 },
+  { name: "FINNIFTY", symbol: "NIFTY_FIN_SERVICE.NS", price: 24188.60, change: 142.30, change_pct: 0.59 },
+  { name: "S&P 500", symbol: "^GSPC", price: 5872.15, change: 28.40, change_pct: 0.49 },
+];
+
 export const api = {
-  // --- Auth & Profile ---
+  // ─── Auth & Profile ──────────────────────────────────────────────────────────
+
   async register(email: string, password: string, fullName: string) {
+    if (!HAS_BACKEND) throw new Error("Backend not configured. Run the FastAPI server and set NEXT_PUBLIC_API_URL.");
     const res = await fetch(`${BASE_URL}/auth/register`, {
       method: "POST",
       headers: getHeaders(),
@@ -59,6 +79,7 @@ export const api = {
   },
 
   async login(email: string, password: string) {
+    if (!HAS_BACKEND) throw new Error("Backend not configured. Run the FastAPI server and set NEXT_PUBLIC_API_URL.");
     const res = await fetch(`${BASE_URL}/auth/login`, {
       method: "POST",
       headers: getHeaders(),
@@ -76,18 +97,19 @@ export const api = {
   logout() {
     if (typeof window !== "undefined") {
       localStorage.removeItem("stockify_token");
+      localStorage.removeItem("wealthcraft_token");
     }
   },
 
   async getProfile() {
-    const res = await fetch(`${BASE_URL}/auth/me`, {
-      headers: getHeaders(),
-    });
+    if (!HAS_BACKEND) throw new Error("No backend configured");
+    const res = await fetch(`${BASE_URL}/auth/me`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Failed to fetch profile");
     return res.json();
   },
 
   async updateRiskProfile(profile: any) {
+    if (!HAS_BACKEND) throw new Error("No backend configured");
     const res = await fetch(`${BASE_URL}/auth/risk-profile`, {
       method: "PUT",
       headers: getHeaders(),
@@ -97,185 +119,183 @@ export const api = {
     return res.json();
   },
 
-  // --- Mutual Funds & Market Data ---
+  // ─── Market Data (all have offline fallbacks) ─────────────────────────────
+
   async getMarketIndices() {
+    if (!HAS_BACKEND) return OFFLINE_INDICES;
     try {
-      const res = await fetch(`${BASE_URL}/funds/market-indices`, {
-        headers: getHeaders(),
-      });
+      const res = await fetch(`${BASE_URL}/funds/market-indices`, { headers: getHeaders() });
       if (res.ok) return await res.json();
     } catch (e) {
-      console.warn("Using offline market indices", e);
+      // network error → fallback
     }
-    return [
-      { name: "NIFTY", symbol: "^NSEI", price: 22651.9, change: 288.6, change_pct: 1.29 },
-      { name: "SENSEX", symbol: "^BSESN", price: 72741.82, change: 817.12, change_pct: 1.14 },
-      { name: "BANKNIFTY", symbol: "^NSEBANK", price: 55347.25, change: 429.25, change_pct: 0.78 },
-      { name: "MIDCPNIFTY", symbol: "^NSEMDCP50", price: 17042.85, change: 215.15, change_pct: 1.28 },
-      { name: "FINNIFTY", symbol: "NIFTY_FIN_SERVICE.NS", price: 24996.1, change: -232.45, change_pct: -0.92 },
-      { name: "S&P 500", symbol: "^GSPC", price: 7805.45, change: -1.79, change_pct: -0.02 }
-    ];
+    return OFFLINE_INDICES;
   },
 
   async getTopMovers(filterType: "gainers" | "losers" | "volume_shockers" = "gainers", indexFilter = "NIFTY 100") {
+    if (!HAS_BACKEND) return filterMarketMovers(filterType, indexFilter);
     try {
       const query = new URLSearchParams({ filter_type: filterType, index_filter: indexFilter });
-      const res = await fetch(`${BASE_URL}/funds/top-movers?${query.toString()}`, {
-        headers: getHeaders(),
-      });
+      const res = await fetch(`${BASE_URL}/funds/top-movers?${query.toString()}`, { headers: getHeaders() });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) return data;
       }
     } catch (e) {
-      // Fallback
+      // fallthrough
     }
     return filterMarketMovers(filterType, indexFilter);
   },
 
   async getTrendingSectors() {
+    if (!HAS_BACKEND) return TRENDING_SECTORS;
     try {
-      const res = await fetch(`${BASE_URL}/funds/trending-sectors`, {
-        headers: getHeaders(),
-      });
+      const res = await fetch(`${BASE_URL}/funds/trending-sectors`, { headers: getHeaders() });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) return data;
       }
     } catch (e) {
-      // Fallback
+      // fallthrough
     }
     return TRENDING_SECTORS;
   },
 
   async getFunds(search?: string, category?: string, risk?: string, minRating?: number) {
+    if (!HAS_BACKEND) {
+      let list = FALLBACK_ASSETS;
+      if (search) {
+        const s = search.toLowerCase();
+        list = list.filter((a) => a.name.toLowerCase().includes(s) || (a.ticker && a.ticker.toLowerCase().includes(s)));
+      }
+      if (category) list = list.filter((a) => a.category.toLowerCase().includes(category.toLowerCase()));
+      if (risk) list = list.filter((a) => a.risk_category.toLowerCase() === risk.toLowerCase());
+      if (minRating) list = list.filter((a) => a.fund_rating >= minRating);
+      return list;
+    }
     try {
       const query = new URLSearchParams();
       if (search) query.append("search", search);
       if (category) query.append("category", category);
       if (risk) query.append("risk", risk);
       if (minRating) query.append("min_rating", minRating.toString());
-      
-      const res = await fetch(`${BASE_URL}/funds/?${query.toString()}`, {
-        headers: getHeaders(),
-      });
+      const res = await fetch(`${BASE_URL}/funds/?${query.toString()}`, { headers: getHeaders() });
       if (res.ok) return await res.json();
     } catch (e) {
-      console.warn("Using fallback assets catalog", e);
+      // fallthrough
     }
     let list = FALLBACK_ASSETS;
     if (search) {
       const s = search.toLowerCase();
-      list = list.filter(a => a.name.toLowerCase().includes(s) || (a.ticker && a.ticker.toLowerCase().includes(s)));
-    }
-    if (category) {
-      list = list.filter(a => a.category.toLowerCase().includes(category.toLowerCase()));
-    }
-    if (risk) {
-      list = list.filter(a => a.risk_category.toLowerCase() === risk.toLowerCase());
-    }
-    if (minRating) {
-      list = list.filter(a => a.fund_rating >= minRating);
+      list = list.filter((a) => a.name.toLowerCase().includes(s) || (a.ticker && a.ticker.toLowerCase().includes(s)));
     }
     return list;
   },
 
   async getRecommendations() {
+    if (!HAS_BACKEND) return FALLBACK_ASSETS.slice(0, 3);
     try {
-      const res = await fetch(`${BASE_URL}/funds/recommendations`, {
-        headers: getHeaders(),
-      });
+      const res = await fetch(`${BASE_URL}/funds/recommendations`, { headers: getHeaders() });
       if (res.ok) return await res.json();
     } catch (e) {
-      console.warn("Using fallback recommendations", e);
+      // fallthrough
     }
     return FALLBACK_ASSETS.slice(0, 3);
   },
 
   async getFundDetails(id: number) {
+    if (!HAS_BACKEND) return FALLBACK_ASSETS.find((a) => a.id === id) || FALLBACK_ASSETS[0];
     try {
-      const res = await fetch(`${BASE_URL}/funds/${id}`, {
-        headers: getHeaders(),
-      });
+      const res = await fetch(`${BASE_URL}/funds/${id}`, { headers: getHeaders() });
       if (res.ok) return await res.json();
     } catch (e) {
-      console.warn("Using fallback fund details", e);
+      // fallthrough
     }
-    return FALLBACK_ASSETS.find(a => a.id === id) || FALLBACK_ASSETS[0];
+    return FALLBACK_ASSETS.find((a) => a.id === id) || FALLBACK_ASSETS[0];
   },
   async getFundDetail(id: number) {
     return this.getFundDetails(id);
   },
 
   async getFundNAVHistory(id: number) {
+    if (!HAS_BACKEND) {
+      const asset = FALLBACK_ASSETS.find((a) => a.id === id) || FALLBACK_ASSETS[0];
+      const base = asset.initial_nav || 1000;
+      const dates = ["2025-10-21", "2025-11-25", "2025-12-30", "2026-02-03", "2026-03-10", "2026-04-14", "2026-05-19", "2026-06-23", "2026-07-28", "2026-09-01", "2026-10-13"];
+      return dates.map((d, i) => ({ date: d, nav: Math.round(base * (0.86 + i * 0.014)), NAV: Math.round(base * (0.86 + i * 0.014)) }));
+    }
     try {
-      const res = await fetch(`${BASE_URL}/funds/${id}/nav-history`, {
-        headers: getHeaders(),
-      });
+      const res = await fetch(`${BASE_URL}/funds/${id}/nav-history`, { headers: getHeaders() });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) return data;
       }
     } catch (e) {
-      console.warn("Using fallback NAV history", e);
+      // fallthrough
     }
-    const asset = FALLBACK_ASSETS.find(a => a.id === id) || FALLBACK_ASSETS[0];
+    const asset = FALLBACK_ASSETS.find((a) => a.id === id) || FALLBACK_ASSETS[0];
     const base = asset.initial_nav || 1000;
     const dates = ["2025-10-21", "2025-11-25", "2025-12-30", "2026-02-03", "2026-03-10", "2026-04-14", "2026-05-19", "2026-06-23", "2026-07-28", "2026-09-01", "2026-10-13"];
-    return dates.map((d, i) => ({
-      date: d,
-      nav: Math.round(base * (0.86 + (i * 0.014))),
-      NAV: Math.round(base * (0.86 + (i * 0.014)))
-    }));
+    return dates.map((d, i) => ({ date: d, nav: Math.round(base * (0.86 + i * 0.014)), NAV: Math.round(base * (0.86 + i * 0.014)) }));
   },
   async getNAVHistory(id: number) {
     return this.getFundNAVHistory(id);
   },
 
   async getFundForecast(id: number) {
+    if (!HAS_BACKEND) {
+      const asset = FALLBACK_ASSETS.find((a) => a.id === id) || FALLBACK_ASSETS[0];
+      const curPrice = asset.initial_nav || 1000;
+      return {
+        target_price_1y: Math.round(curPrice * 1.18), target_price_high: Math.round(curPrice * 1.35),
+        target_price_low: Math.round(curPrice * 0.92), cagr: 18.5, confidence: 85.0,
+        dates: ["2026-11-01", "2026-12-01", "2027-01-01", "2027-02-01"],
+        nav: [curPrice * 1.05, curPrice * 1.09, curPrice * 1.14, curPrice * 1.18],
+        lower_bound: [curPrice * 0.98, curPrice * 0.96, curPrice * 0.94, curPrice * 0.92],
+        upper_bound: [curPrice * 1.12, curPrice * 1.19, curPrice * 1.27, curPrice * 1.35],
+      };
+    }
     try {
-      const res = await fetch(`${BASE_URL}/funds/${id}/forecast`, {
-        headers: getHeaders(),
-      });
+      const res = await fetch(`${BASE_URL}/funds/${id}/forecast`, { headers: getHeaders() });
       if (res.ok) return await res.json();
     } catch (e) {
-      console.warn("Using fallback forecast", e);
+      // fallthrough
     }
-    const asset = FALLBACK_ASSETS.find(a => a.id === id) || FALLBACK_ASSETS[0];
+    const asset = FALLBACK_ASSETS.find((a) => a.id === id) || FALLBACK_ASSETS[0];
     const curPrice = asset.initial_nav || 1000;
     return {
-      target_price_1y: Math.round(curPrice * 1.18),
-      target_price_high: Math.round(curPrice * 1.35),
-      target_price_low: Math.round(curPrice * 0.92),
-      cagr: 18.5,
-      confidence: 85.0,
+      target_price_1y: Math.round(curPrice * 1.18), target_price_high: Math.round(curPrice * 1.35),
+      target_price_low: Math.round(curPrice * 0.92), cagr: 18.5, confidence: 85.0,
       dates: ["2026-11-01", "2026-12-01", "2027-01-01", "2027-02-01"],
       nav: [curPrice * 1.05, curPrice * 1.09, curPrice * 1.14, curPrice * 1.18],
       lower_bound: [curPrice * 0.98, curPrice * 0.96, curPrice * 0.94, curPrice * 0.92],
-      upper_bound: [curPrice * 1.12, curPrice * 1.19, curPrice * 1.27, curPrice * 1.35]
+      upper_bound: [curPrice * 1.12, curPrice * 1.19, curPrice * 1.27, curPrice * 1.35],
     };
   },
 
   async getFundPeers(id: number) {
+    if (!HAS_BACKEND) return [
+      { name: "HDFC Bank Ltd", ticker: "HDFCBANK.NS", price: 1685.40, pe_ratio: 18.6, aum: 1172694.64, change_1y: 12.4 },
+      { name: "ICICI Bank Ltd", ticker: "ICICIBANK.NS", price: 1248.60, pe_ratio: 17.2, aum: 1049555.5, change_1y: 24.2 },
+      { name: "Infosys Ltd", ticker: "INFY.NS", price: 1894.20, pe_ratio: 26.8, aum: 764100, change_1y: 9.8 },
+    ];
     try {
-      const res = await fetch(`${BASE_URL}/funds/${id}/peers`, {
-        headers: getHeaders(),
-      });
+      const res = await fetch(`${BASE_URL}/funds/${id}/peers`, { headers: getHeaders() });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) return data;
       }
     } catch (e) {
-      console.warn("Using fallback peers", e);
+      // fallthrough
     }
     return [
-      { name: "HDFC Bank Ltd", ticker: "HDFCBANK.NS", price: 761.45, pe_ratio: 14.52, aum: 1172694.64, change_1y: 12.4 },
-      { name: "ICICI Bank Ltd", ticker: "ICICIBANK.NS", price: 1463.1, pe_ratio: 17.53, aum: 1049555.5, change_1y: 24.2 },
-      { name: "State Bank of India", ticker: "SBIN.NS", price: 812.5, pe_ratio: 11.29, aum: 964045.7, change_1y: 18.6 }
+      { name: "HDFC Bank Ltd", ticker: "HDFCBANK.NS", price: 1685.40, pe_ratio: 18.6, aum: 1172694.64, change_1y: 12.4 },
+      { name: "ICICI Bank Ltd", ticker: "ICICIBANK.NS", price: 1248.60, pe_ratio: 17.2, aum: 1049555.5, change_1y: 24.2 },
     ];
   },
 
   async resolveFund(schemeCode: number, name: string, ticker?: string) {
+    if (!HAS_BACKEND) throw new Error("Backend required to resolve funds");
     const res = await fetch(`${BASE_URL}/funds/resolve`, {
       method: "POST",
       headers: getHeaders(),
@@ -286,6 +306,7 @@ export const api = {
   },
 
   async compareFunds(fundIds: number[]) {
+    if (!HAS_BACKEND) throw new Error("Backend required for comparison");
     const res = await fetch(`${BASE_URL}/funds/compare`, {
       method: "POST",
       headers: getHeaders(),
@@ -295,43 +316,23 @@ export const api = {
     return res.json();
   },
 
-  // --- Portfolios ---
+  // ─── Portfolio ─────────────────────────────────────────────────────────────
+
   async getPortfolio() {
+    if (!HAS_BACKEND) return EMPTY_PORTFOLIO;
     try {
-      const res = await fetch(`${BASE_URL}/portfolio/`, {
-        headers: getHeaders(),
-      });
-      if (!res.ok) {
-        return {
-          items: [],
-          total_invested: 0.0,
-          current_value: 0.0,
-          absolute_return: 0.0,
-          absolute_return_pct: 0.0,
-          xirr: 0.0,
-          allocation: {}
-        };
-      }
+      const res = await fetch(`${BASE_URL}/portfolio/`, { headers: getHeaders() });
+      if (!res.ok) return EMPTY_PORTFOLIO;
       return await res.json();
     } catch (err) {
-      console.warn("Portfolio fetch fallback triggered:", err);
-      return {
-        items: [],
-        total_invested: 0.0,
-        current_value: 0.0,
-        absolute_return: 0.0,
-        absolute_return_pct: 0.0,
-        xirr: 0.0,
-        allocation: {}
-      };
+      return EMPTY_PORTFOLIO;
     }
   },
 
   async getPortfolioNews() {
+    if (!HAS_BACKEND) return [];
     try {
-      const res = await fetch(`${BASE_URL}/portfolio/news`, {
-        headers: getHeaders(),
-      });
+      const res = await fetch(`${BASE_URL}/portfolio/news`, { headers: getHeaders() });
       if (!res.ok) return [];
       return await res.json();
     } catch (err) {
@@ -344,6 +345,7 @@ export const api = {
   },
 
   async addPortfolioItem(fundId: number, units: number, purchasePrice: number, purchaseDate: string, fundName?: string) {
+    if (!HAS_BACKEND) throw new Error("Backend required to add transactions");
     const res = await fetch(`${BASE_URL}/portfolio/`, {
       method: "POST",
       headers: getHeaders(),
@@ -354,6 +356,7 @@ export const api = {
   },
 
   async removePortfolioItem(itemId: number) {
+    if (!HAS_BACKEND) throw new Error("Backend required to remove transactions");
     const res = await fetch(`${BASE_URL}/portfolio/${itemId}`, {
       method: "DELETE",
       headers: getHeaders(),
@@ -363,23 +366,27 @@ export const api = {
   },
 
   async optimizePortfolio() {
-    const res = await fetch(`${BASE_URL}/portfolio/optimize`, {
-      headers: getHeaders(),
-    });
+    if (!HAS_BACKEND) throw new Error("Backend required for portfolio optimization");
+    const res = await fetch(`${BASE_URL}/portfolio/optimize`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Failed to optimize portfolio");
     return res.json();
   },
 
-  // --- Goals ---
+  // ─── Goals ─────────────────────────────────────────────────────────────────
+
   async getGoals() {
-    const res = await fetch(`${BASE_URL}/goals/`, {
-      headers: getHeaders(),
-    });
-    if (!res.ok) throw new Error("Failed to fetch goals");
-    return res.json();
+    if (!HAS_BACKEND) return [];
+    try {
+      const res = await fetch(`${BASE_URL}/goals/`, { headers: getHeaders() });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (err) {
+      return [];
+    }
   },
 
   async createGoal(name: string, targetAmount: number, currentAmount: number, targetDate: string) {
+    if (!HAS_BACKEND) throw new Error("Backend required to create goals");
     const res = await fetch(`${BASE_URL}/goals/`, {
       method: "POST",
       headers: getHeaders(),
@@ -390,6 +397,7 @@ export const api = {
   },
 
   async removeGoal(goalId: number) {
+    if (!HAS_BACKEND) throw new Error("Backend required to remove goals");
     const res = await fetch(`${BASE_URL}/goals/${goalId}`, {
       method: "DELETE",
       headers: getHeaders(),
@@ -399,29 +407,33 @@ export const api = {
   },
 
   async simulateSip(sip: number, cagr: number, years: number, inflation: number = 6.0) {
+    if (!HAS_BACKEND) throw new Error("No backend — local SIP calculation will be used");
     const query = new URLSearchParams({
       monthly_sip: sip.toString(),
       expected_cagr: cagr.toString(),
       years: years.toString(),
-      inflation_rate: inflation.toString()
+      inflation_rate: inflation.toString(),
     });
-    const res = await fetch(`${BASE_URL}/goals/simulate-sip?${query.toString()}`, {
-      headers: getHeaders(),
-    });
+    const res = await fetch(`${BASE_URL}/goals/simulate-sip?${query.toString()}`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Failed to simulate SIP");
     return res.json();
   },
 
-  // --- Chat ---
+  // ─── Chat ──────────────────────────────────────────────────────────────────
+
   async getChatHistory() {
-    const res = await fetch(`${BASE_URL}/chat/`, {
-      headers: getHeaders(),
-    });
-    if (!res.ok) throw new Error("Failed to fetch chat history");
-    return res.json();
+    if (!HAS_BACKEND) return [];
+    try {
+      const res = await fetch(`${BASE_URL}/chat/`, { headers: getHeaders() });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (err) {
+      return [];
+    }
   },
 
   async sendChatMessage(content: string) {
+    if (!HAS_BACKEND) throw new Error("No backend — offline response will be used");
     const res = await fetch(`${BASE_URL}/chat/`, {
       method: "POST",
       headers: getHeaders(),
@@ -431,9 +443,10 @@ export const api = {
     return res.json();
   },
 
-  // --- PDF Download link ---
+  // ─── Reports ───────────────────────────────────────────────────────────────
+
   getPdfReportUrl() {
     const token = typeof window !== "undefined" ? localStorage.getItem("stockify_token") : "";
-    return `${BASE_URL}/reports/pdf?token=${token}`;
-  }
+    return HAS_BACKEND ? `${BASE_URL}/reports/pdf?token=${token}` : "#";
+  },
 };
