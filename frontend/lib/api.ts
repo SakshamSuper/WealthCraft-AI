@@ -150,7 +150,30 @@ export const api = {
   // ─── Auth & Profile ──────────────────────────────────────────────────────────
 
   async register(email: string, password: string, fullName: string) {
-    if (!HAS_BACKEND) throw new Error("Backend not configured. Run the FastAPI server and set NEXT_PUBLIC_API_URL.");
+    if (!HAS_BACKEND) {
+      const demoToken = "demo_jwt_token_" + Date.now();
+      if (typeof window !== "undefined") {
+        localStorage.setItem("wealthcraft_token", demoToken);
+        localStorage.setItem("stockify_token", demoToken);
+        localStorage.setItem(
+          "wealthcraft_user_profile",
+          JSON.stringify({
+            id: 1,
+            email,
+            full_name: fullName || "Investor",
+            risk_appetite: "Moderate Aggressive",
+            investment_horizon_years: 10,
+            monthly_income: 150000,
+            sip_amount: 15000,
+          })
+        );
+      }
+      return {
+        access_token: demoToken,
+        token_type: "bearer",
+        user: { id: 1, email, full_name: fullName },
+      };
+    }
     const res = await fetch(`${BASE_URL}/auth/register`, {
       method: "POST",
       headers: getHeaders(),
@@ -161,7 +184,22 @@ export const api = {
   },
 
   async login(email: string, password: string) {
-    if (!HAS_BACKEND) throw new Error("Backend not configured. Run the FastAPI server and set NEXT_PUBLIC_API_URL.");
+    if (!HAS_BACKEND) {
+      const demoToken = "demo_jwt_token_" + Date.now();
+      if (typeof window !== "undefined") {
+        localStorage.setItem("wealthcraft_token", demoToken);
+        localStorage.setItem("stockify_token", demoToken);
+      }
+      return {
+        access_token: demoToken,
+        token_type: "bearer",
+        user: {
+          id: 1,
+          email: email || "investor@wealthcraft.ai",
+          full_name: "Demo Investor",
+        },
+      };
+    }
     const res = await fetch(`${BASE_URL}/auth/login`, {
       method: "POST",
       headers: getHeaders(),
@@ -184,14 +222,42 @@ export const api = {
   },
 
   async getProfile() {
-    if (!HAS_BACKEND) throw new Error("No backend configured");
+    if (!HAS_BACKEND) {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("wealthcraft_user_profile");
+        if (saved) {
+          try {
+            return JSON.parse(saved);
+          } catch {
+            // ignore
+          }
+        }
+      }
+      return {
+        id: 1,
+        email: "investor@wealthcraft.ai",
+        full_name: "Demo Investor",
+        risk_appetite: "Moderate Aggressive",
+        investment_horizon_years: 10,
+        monthly_income: 150000,
+        sip_amount: 15000,
+      };
+    }
     const res = await fetch(`${BASE_URL}/auth/me`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Failed to fetch profile");
     return res.json();
   },
 
   async updateRiskProfile(profile: any) {
-    if (!HAS_BACKEND) throw new Error("No backend configured");
+    if (!HAS_BACKEND) {
+      if (typeof window !== "undefined") {
+        const existing = await this.getProfile();
+        const updated = { ...existing, ...profile };
+        localStorage.setItem("wealthcraft_user_profile", JSON.stringify(updated));
+        return updated;
+      }
+      return profile;
+    }
     const res = await fetch(`${BASE_URL}/auth/risk-profile`, {
       method: "PUT",
       headers: getHeaders(),
