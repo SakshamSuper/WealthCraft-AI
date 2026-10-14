@@ -1,4 +1,5 @@
 import { FALLBACK_ASSETS } from "./fallbackAssets";
+import { filterMarketMovers, TRENDING_SECTORS } from "./marketData";
 
 const getBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
@@ -97,24 +98,20 @@ export const api = {
     ];
   },
 
-  async getTopMovers(filterType = "gainers", indexFilter = "NIFTY 100") {
+  async getTopMovers(filterType: "gainers" | "losers" | "volume_shockers" = "gainers", indexFilter = "NIFTY 100") {
     try {
       const query = new URLSearchParams({ filter_type: filterType, index_filter: indexFilter });
       const res = await fetch(`${BASE_URL}/funds/top-movers?${query.toString()}`, {
         headers: getHeaders(),
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
+      }
     } catch (e) {
-      console.warn("Using fallback top movers", e);
+      // Fallback
     }
-    return FALLBACK_ASSETS.slice(0, 5).map(a => ({
-      name: a.name,
-      ticker: a.ticker,
-      price: a.initial_nav || 1200,
-      change: 14.5,
-      change_pct: 1.25,
-      volume: 1250000
-    }));
+    return filterMarketMovers(filterType, indexFilter);
   },
 
   async getTrendingSectors() {
@@ -122,15 +119,14 @@ export const api = {
       const res = await fetch(`${BASE_URL}/funds/trending-sectors`, {
         headers: getHeaders(),
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
+      }
     } catch (e) {
-      console.warn("Using fallback trending sectors", e);
+      // Fallback
     }
-    return [
-      { sector: "Information Technology", change_pct: 2.15, top_stock: "TCS.NS" },
-      { sector: "Banking & Finance", change_pct: 1.48, top_stock: "HDFCBANK.NS" },
-      { sector: "Oil & Gas", change_pct: 0.95, top_stock: "RELIANCE.NS" }
-    ];
+    return TRENDING_SECTORS;
   },
 
   async getFunds(search?: string, category?: string, risk?: string, minRating?: number) {

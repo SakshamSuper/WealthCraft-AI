@@ -1,2 +1,5 @@
 .vercel
 .env*
+.next
+out
+*.tsbuildinfo

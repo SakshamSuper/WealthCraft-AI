@@ -26,9 +26,9 @@ export const FALLBACK_ASSETS = [
     "expense_ratio": 0.0,
     "aum": 1187214.56,
     "pe_ratio": 35.81,
-    "high_52w": 2174.5,
-    "low_52w": 1740.5,
-    "initial_nav": 1948.4,
+    "high_52w": 1779.0,
+    "low_52w": 1105.0,
+    "initial_nav": 1698.5,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -41,10 +41,10 @@ export const FALLBACK_ASSETS = [
     "fund_rating": 5,
     "expense_ratio": 0.0,
     "aum": 1172694.64,
-    "pe_ratio": 14.52,
-    "high_52w": 1020.5,
-    "low_52w": 726.65,
-    "initial_nav": 761.45,
+    "pe_ratio": 18.25,
+    "high_52w": 1794.0,
+    "low_52w": 1363.55,
+    "initial_nav": 1685.4,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -58,9 +58,9 @@ export const FALLBACK_ASSETS = [
     "expense_ratio": 0.0,
     "aum": 1049555.5,
     "pe_ratio": 17.53,
-    "high_52w": 1500.0,
-    "low_52w": 1187.6,
-    "initial_nav": 1463.1,
+    "high_52w": 1362.0,
+    "low_52w": 980.0,
+    "initial_nav": 1248.6,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -73,10 +73,10 @@ export const FALLBACK_ASSETS = [
     "fund_rating": 5,
     "expense_ratio": 0.0,
     "aum": 964045.7,
-    "pe_ratio": 11.29,
-    "high_52w": 1234.7,
-    "low_52w": 786.55,
-    "initial_nav": 1044.4,
+    "pe_ratio": 10.45,
+    "high_52w": 912.0,
+    "low_52w": 598.0,
+    "initial_nav": 796.8,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -89,10 +89,10 @@ export const FALLBACK_ASSETS = [
     "fund_rating": 5,
     "expense_ratio": 0.0,
     "aum": 803613.42,
-    "pe_ratio": 16.26,
-    "high_52w": 3350.0,
-    "low_52w": 1976.8,
-    "initial_nav": 2221.1,
+    "pe_ratio": 28.5,
+    "high_52w": 4585.0,
+    "low_52w": 3313.0,
+    "initial_nav": 4125.5,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -105,10 +105,10 @@ export const FALLBACK_ASSETS = [
     "fund_rating": 5,
     "expense_ratio": 0.0,
     "aum": 665679.03,
-    "pe_ratio": 34.27,
-    "high_52w": 1102.5,
-    "low_52w": 787.9,
-    "initial_nav": 1069.2,
+    "pe_ratio": 31.5,
+    "high_52w": 7850.0,
+    "low_52w": 6300.0,
+    "initial_nav": 6850.0,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -124,7 +124,7 @@ export const FALLBACK_ASSETS = [
     "pe_ratio": 27.87,
     "high_52w": 4440.0,
     "low_52w": 3288.1,
-    "initial_nav": 3846.6,
+    "initial_nav": 3685.0,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -140,7 +140,7 @@ export const FALLBACK_ASSETS = [
     "pe_ratio": 33.38,
     "high_52w": 2705.09,
     "low_52w": 2022.5,
-    "initial_nav": 2142.5,
+    "initial_nav": 2385.0,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -156,7 +156,7 @@ export const FALLBACK_ASSETS = [
     "pe_ratio": 40.78,
     "high_52w": 1962.7,
     "low_52w": 1548.0,
-    "initial_nav": 1961.9,
+    "initial_nav": 1842.0,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -169,10 +169,10 @@ export const FALLBACK_ASSETS = [
     "fund_rating": 5,
     "expense_ratio": 0.0,
     "aum": 435546.42,
-    "pe_ratio": 14.96,
-    "high_52w": 1728.0,
-    "low_52w": 982.4,
-    "initial_nav": 1073.5,
+    "pe_ratio": 26.8,
+    "high_52w": 2006.0,
+    "low_52w": 1358.35,
+    "initial_nav": 1894.2,
     "amc": "NSE / BSE Listed Equities"
   },
   {

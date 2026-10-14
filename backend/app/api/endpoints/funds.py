@@ -94,7 +94,16 @@ def get_top_movers(
                 "change": 201.80,
                 "change_pct": 5.62,
                 "volume": 2391097,
-                "sparkline": [3590, 3600, 3610, 3605, 3620, 3615, 3630, 3650, 3750, 3792]
+                "sparkline": [3590, 3605, 3620, 3615, 3640, 3660, 3690, 3720, 3760, 3792]
+            },
+            {
+                "symbol": "BEL.NS",
+                "name": "Bharat Electronics",
+                "price": 312.45,
+                "change": 14.85,
+                "change_pct": 4.99,
+                "volume": 34210500,
+                "sparkline": [297.6, 298.5, 301.0, 300.2, 303.4, 305.8, 308.2, 309.5, 311.0, 312.45]
             },
             {
                 "symbol": "MUTHOOTFIN.NS",
@@ -103,7 +112,7 @@ def get_top_movers(
                 "change": 96.20,
                 "change_pct": 3.23,
                 "volume": 966939,
-                "sparkline": [2983, 2990, 3010, 3005, 3030, 3045, 3060, 3050, 3070, 3079]
+                "sparkline": [2983, 2995, 3010, 3005, 3030, 3045, 3060, 3050, 3070, 3079]
             },
             {
                 "symbol": "SHRIRAMFIN.NS",
@@ -112,16 +121,25 @@ def get_top_movers(
                 "change": 26.10,
                 "change_pct": 2.52,
                 "volume": 7633092,
-                "sparkline": [1035, 1040, 1045, 1042, 1050, 1055, 1058, 1054, 1060, 1061.5]
+                "sparkline": [1035, 1038, 1042, 1040, 1048, 1052, 1055, 1053, 1058, 1061.5]
             },
             {
-                "symbol": "HINDZINC.NS",
-                "name": "Hindustan Zinc",
-                "price": 534.40,
-                "change": 11.75,
-                "change_pct": 2.25,
-                "volume": 3103362,
-                "sparkline": [522.65, 523, 525, 524, 528, 530, 532, 531, 533, 534.4]
+                "symbol": "HAL.NS",
+                "name": "Hindustan Aeronautics",
+                "price": 4581.70,
+                "change": 90.70,
+                "change_pct": 2.02,
+                "volume": 697566,
+                "sparkline": [4491, 4505, 4515, 4508, 4530, 4545, 4560, 4552, 4570, 4581.7]
+            },
+            {
+                "symbol": "M&M.NS",
+                "name": "Mahindra & Mahindra",
+                "price": 3145.20,
+                "change": 68.40,
+                "change_pct": 2.22,
+                "volume": 4120800,
+                "sparkline": [3076, 3085, 3098, 3092, 3110, 3125, 3132, 3130, 3140, 3145.2]
             },
             {
                 "symbol": "BAJAJFINSV.NS",
@@ -130,16 +148,16 @@ def get_top_movers(
                 "change": 39.10,
                 "change_pct": 2.10,
                 "volume": 1668696,
-                "sparkline": [1861.5, 1865, 1870, 1875, 1880, 1885, 1890, 1895, 1898, 1900.6]
+                "sparkline": [1861.5, 1868, 1872, 1870, 1882, 1888, 1892, 1890, 1896, 1900.6]
             },
             {
-                "symbol": "HAL.NS",
-                "name": "Hindustan Aeronaut.",
-                "price": 4581.70,
-                "change": 90.70,
-                "change_pct": 2.02,
-                "volume": 697566,
-                "sparkline": [4491, 4495, 4500, 4490, 4510, 4525, 4540, 4560, 4575, 4581.7]
+                "symbol": "ICICIBANK.NS",
+                "name": "ICICI Bank",
+                "price": 1248.60,
+                "change": 22.40,
+                "change_pct": 1.83,
+                "volume": 18450000,
+                "sparkline": [1226, 1230, 1234, 1232, 1238, 1242, 1245, 1243, 1246, 1248.6]
             }
         ],
         "losers": [
@@ -149,55 +167,105 @@ def get_top_movers(
                 "price": 782.10,
                 "change": -24.30,
                 "change_pct": -3.01,
-                "volume": 1420550,
-                "sparkline": [806.4, 804, 800, 798, 792, 790, 788, 785, 784, 782.1]
+                "volume": 412050,
+                "sparkline": [806.4, 804.0, 800.5, 802.0, 796.5, 792.0, 788.5, 790.0, 785.0, 782.1]
             },
             {
                 "symbol": "BATAINDIA.NS",
-                "name": "Bata India Ltd",
-                "price": 1340.50,
-                "change": -35.20,
-                "change_pct": -2.56,
-                "volume": 892300,
-                "sparkline": [1375.7, 1370, 1365, 1360, 1355, 1350, 1348, 1344, 1342, 1340.5]
+                "name": "Bata India",
+                "price": 1295.40,
+                "change": -34.80,
+                "change_pct": -2.62,
+                "volume": 685120,
+                "sparkline": [1330.2, 1326.0, 1320.5, 1322.0, 1315.0, 1308.0, 1304.5, 1306.0, 1299.0, 1295.4]
             },
             {
-                "symbol": "METROBRAND.NS",
-                "name": "Metro Brands Ltd",
-                "price": 1120.00,
-                "change": -22.40,
-                "change_pct": -1.96,
-                "volume": 650120,
-                "sparkline": [1142.4, 1140, 1135, 1132, 1128, 1125, 1124, 1122, 1121, 1120]
+                "symbol": "INDUSINDBK.NS",
+                "name": "IndusInd Bank",
+                "price": 1342.15,
+                "change": -31.45,
+                "change_pct": -2.29,
+                "volume": 4890100,
+                "sparkline": [1373.6, 1368.0, 1362.5, 1365.0, 1358.0, 1352.0, 1348.0, 1350.5, 1345.0, 1342.15]
+            },
+            {
+                "symbol": "TECHM.NS",
+                "name": "Tech Mahindra",
+                "price": 1580.40,
+                "change": -33.60,
+                "change_pct": -2.08,
+                "volume": 2240900,
+                "sparkline": [1614.0, 1609.5, 1602.0, 1605.0, 1598.0, 1591.0, 1587.5, 1590.0, 1583.5, 1580.4]
+            },
+            {
+                "symbol": "NESTLEIND.NS",
+                "name": "Nestle India",
+                "price": 2185.00,
+                "change": -38.50,
+                "change_pct": -1.73,
+                "volume": 812400,
+                "sparkline": [2223.5, 2218.0, 2210.0, 2212.5, 2205.0, 2198.0, 2192.0, 2195.0, 2188.0, 2185.0]
+            },
+            {
+                "symbol": "ASIANPAINT.NS",
+                "name": "Asian Paints",
+                "price": 2420.10,
+                "change": -39.20,
+                "change_pct": -1.59,
+                "volume": 1480200,
+                "sparkline": [2459.3, 2452.0, 2445.0, 2448.5, 2440.0, 2432.0, 2428.0, 2430.5, 2424.0, 2420.1]
             }
         ],
         "volume_shockers": [
             {
-                "symbol": "SHRIRAMFIN.NS",
-                "name": "Shriram Finance",
-                "price": 1061.50,
-                "change": 26.10,
-                "change_pct": 2.52,
-                "volume": 7633092,
-                "sparkline": [1035, 1040, 1045, 1042, 1050, 1055, 1058, 1054, 1060, 1061.5]
+                "symbol": "TATAMOTORS.NS",
+                "name": "Tata Motors",
+                "price": 884.50,
+                "change": 12.30,
+                "change_pct": 1.41,
+                "volume": 48290110,
+                "volume_multiple": "2.8x avg",
+                "sparkline": [872.2, 874.5, 878.0, 876.5, 880.0, 882.5, 885.0, 883.0, 884.0, 884.5]
             },
             {
-                "symbol": "HINDZINC.NS",
-                "name": "Hindustan Zinc",
-                "price": 534.40,
-                "change": 11.75,
-                "change_pct": 2.25,
-                "volume": 3103362,
-                "sparkline": [522.65, 523, 525, 524, 528, 530, 532, 531, 533, 534.4]
+                "symbol": "SBIN.NS",
+                "name": "State Bank of India",
+                "price": 796.80,
+                "change": 8.40,
+                "change_pct": 1.07,
+                "volume": 39512400,
+                "volume_multiple": "2.1x avg",
+                "sparkline": [788.4, 790.0, 792.5, 791.0, 794.0, 795.5, 797.0, 796.0, 796.5, 796.8]
             },
             {
-                "symbol": "TVSMOTOR.NS",
-                "name": "TVS Motor Company",
-                "price": 3792.00,
-                "change": 201.80,
-                "change_pct": 5.62,
-                "volume": 2391097,
-                "sparkline": [3590, 3600, 3610, 3605, 3620, 3615, 3630, 3650, 3750, 3792]
+                "symbol": "BEL.NS",
+                "name": "Bharat Electronics",
+                "price": 312.45,
+                "change": 14.85,
+                "change_pct": 4.99,
+                "volume": 34210500,
+                "volume_multiple": "1.9x avg",
+                "sparkline": [297.6, 298.5, 301.0, 300.2, 303.4, 305.8, 308.2, 309.5, 311.0, 312.45]
+            },
+            {
+                "symbol": "ZOMATO.NS",
+                "name": "Zomato",
+                "price": 268.40,
+                "change": 7.90,
+                "change_pct": 3.03,
+                "volume": 64210000,
+                "volume_multiple": "2.3x avg",
+                "sparkline": [260.5, 262.0, 264.5, 263.8, 266.0, 267.2, 268.5, 267.8, 268.0, 268.4]
+            },
+            {
+                "symbol": "JIOFIN.NS",
+                "name": "Jio Financial Services",
+                "price": 318.25,
+                "change": 5.60,
+                "change_pct": 1.79,
+                "volume": 51280000,
+                "volume_multiple": "1.95x avg",
+                "sparkline": [312.65, 313.8, 315.0, 314.5, 316.2, 317.0, 318.5, 317.8, 318.0, 318.25]
             }
         ]
     }
@@ -210,46 +278,84 @@ def get_trending_sectors() -> Any:
     """
     return [
         {
-            "sector": "Telecom Equipment & Infra Services",
+            "sector": "Telecom Equipment & Infra",
             "icon": "wifi",
-            "gainers": 19,
-            "losers": 6,
-            "change_pct": 1.75
+            "gainers": 22,
+            "losers": 5,
+            "change_pct": 2.45,
+            "top_stock": "BHARTIARTL.NS"
         },
         {
-            "sector": "Rating Agencies",
-            "icon": "star",
-            "gainers": 1,
-            "losers": 1,
-            "change_pct": 1.39
+            "sector": "Information Technology",
+            "icon": "layers",
+            "gainers": 34,
+            "losers": 8,
+            "change_pct": 1.85,
+            "top_stock": "TCS.NS"
         },
         {
-            "sector": "Cement & Building Materials",
+            "sector": "Automobile & Auto Parts",
+            "icon": "layers",
+            "gainers": 28,
+            "losers": 12,
+            "change_pct": 1.42,
+            "top_stock": "TVSMOTOR.NS"
+        },
+        {
+            "sector": "Banking & Financial Services",
             "icon": "building",
-            "gainers": 20,
-            "losers": 15,
-            "change_pct": 1.34
+            "gainers": 32,
+            "losers": 18,
+            "change_pct": 0.94,
+            "top_stock": "ICICIBANK.NS"
         },
         {
-            "sector": "Furniture & Wood",
-            "icon": "home",
-            "gainers": 7,
-            "losers": 7,
-            "change_pct": -1.37
+            "sector": "Oil, Gas & Energy",
+            "icon": "layers",
+            "gainers": 14,
+            "losers": 11,
+            "change_pct": 0.65,
+            "top_stock": "RELIANCE.NS"
         },
         {
-            "sector": "Leather Goods",
-            "icon": "briefcase",
-            "gainers": 1,
-            "losers": 3,
-            "change_pct": -1.56
+            "sector": "Metals & Mining",
+            "icon": "layers",
+            "gainers": 24,
+            "losers": 14,
+            "change_pct": 1.15,
+            "top_stock": "HINDZINC.NS"
         },
         {
-            "sector": "Footwear & Apparel",
+            "sector": "Capital Goods & Defense",
+            "icon": "star",
+            "gainers": 29,
+            "losers": 6,
+            "change_pct": 3.12,
+            "top_stock": "HAL.NS"
+        },
+        {
+            "sector": "Healthcare & Pharmaceuticals",
+            "icon": "layers",
+            "gainers": 15,
+            "losers": 25,
+            "change_pct": -0.48,
+            "top_stock": "SUNPHARMA.NS"
+        },
+        {
+            "sector": "FMCG & Consumer Goods",
             "icon": "shopping-bag",
-            "gainers": 3,
-            "losers": 9,
-            "change_pct": -1.96
+            "gainers": 12,
+            "losers": 28,
+            "change_pct": -0.82,
+            "top_stock": "NESTLEIND.NS"
+        },
+        {
+            "sector": "Realty & Infrastructure",
+            "icon": "home",
+            "gainers": 6,
+            "losers": 18,
+            "change_pct": -1.35,
+            "top_stock": "DLF.NS"
         }
     ]
 
