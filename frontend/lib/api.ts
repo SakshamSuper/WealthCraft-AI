@@ -1,15 +1,34 @@
 import { FALLBACK_ASSETS } from "./fallbackAssets";
 import { filterMarketMovers, TRENDING_SECTORS } from "./marketData";
 
-const getBaseUrl = () => {
-  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-  if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-    return "https://wealthcraft-api.loca.lt/api/v1";
+/**
+ * Resolve the backend API base URL:
+ * 1. Use NEXT_PUBLIC_API_URL env var if set (recommended for all deployments)
+ * 2. Fall back to localhost for local development
+ * 3. Return empty string (offline/static mode) when no backend is configured
+ *
+ * To configure production backend: set NEXT_PUBLIC_API_URL=https://your-backend.com/api/v1
+ */
+const getBaseUrl = (): string => {
+  // Env var takes priority (set in Vercel/Render dashboard)
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
   }
-  return "http://127.0.0.1:8000/api/v1";
+  // Local development
+  if (typeof window !== "undefined") {
+    const { hostname } = window.location;
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return "http://127.0.0.1:8000/api/v1";
+    }
+  }
+  // Production with no backend configured — use offline fallback data
+  return "";
 };
 
 const BASE_URL = getBaseUrl();
+
+// Whether we have a reachable backend configured
+const HAS_BACKEND = BASE_URL !== "";
 
 const getHeaders = () => {
   const headers: Record<string, string> = {

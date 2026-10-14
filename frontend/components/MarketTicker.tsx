@@ -195,7 +195,7 @@ export default function MarketTicker() {
             })}
           </div>
 
-          <div className="hidden lg:flex items-center gap-2 text-[11px] text-slate-400 font-medium border-l border-white/10 pl-4">
+          <div className="hidden lg:flex items-center gap-3 text-[11px] text-slate-400 font-medium border-l border-white/10 pl-4">
             <button
               onClick={() => setShowGlobalModal(true)}
               className="flex items-center gap-1.5 hover:text-[#00D09C] transition-colors cursor-pointer"
@@ -204,6 +204,9 @@ export default function MarketTicker() {
               <Globe size={15} className="text-[#00D09C]" />
               <span className="font-semibold text-slate-300 text-[11px]">Global Markets</span>
             </button>
+            <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              Demo Data
+            </span>
           </div>
         </div>
       </div>

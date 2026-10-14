@@ -33,13 +33,13 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Set CORS enabled origins for seamless production deployments
+# Restrict CORS to known frontend origins only
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.get_cors_origins(),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Bypass-Tunnel-Reminder"],
 )
 
 # Include main router

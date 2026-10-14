@@ -4,13 +4,15 @@ from app.core.database import get_db
 from app.crud import crud
 from app.schemas import schemas
 from app.api import deps
-from app.services.calculators import calculate_xirr
+from app.services.calculators import calculate_xirr, calculate_cagr
 from agents.orchestrator import AgentOrchestrator
 from app.models.models import NAVHistory, MutualFund, User
 from typing import List, Any
 from datetime import datetime, date
 from sqlalchemy import desc
 import requests
+import math
+
 
 router = APIRouter()
 
@@ -426,4 +428,3 @@ def read_portfolio_news(
         
     return analyzed_news
 
-import math

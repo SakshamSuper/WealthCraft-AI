@@ -235,14 +235,21 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-heading font-bold text-lg text-white">Outperformance vs Benchmark</h2>
-                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                  currentAlpha >= 0
-                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                    : "bg-rose-500/10 border-rose-500/20 text-rose-400"
-                }`}>
-                  Alpha: {currentAlpha >= 0 ? `+${currentAlpha}%` : `${currentAlpha}%`}
-                </span>
+                {hasActiveHoldings ? (
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                    currentAlpha >= 0
+                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                      : "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                  }`}>
+                    Alpha: {currentAlpha >= 0 ? `+${currentAlpha}%` : `${currentAlpha}%`}
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border bg-slate-500/10 border-slate-500/20 text-slate-400">
+                    No Holdings
+                  </span>
+                )}
               </div>
+
               <p className="text-xs text-slate-500 mt-0.5">
                 {!hasActiveHoldings && benchmarkMode === "ACTUAL"
                   ? "Active Holdings: 0 (Invested: ₹0.00). Portfolio sits at 0.0% baseline vs NIFTY 50."
@@ -383,25 +390,38 @@ export default function DashboardPage() {
               <Sparkles size={18} className="text-emerald-400" />
               <h2 className="font-heading font-bold text-lg text-white">AI Assistant Insight</h2>
             </div>
-            
+
             <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-xs text-slate-300 leading-relaxed space-y-3">
               <p>
-                Market sentiment is currently **Cautiously Optimistic**, supported by robust domestic macro numbers and steady interest rate outlooks.
+                Market sentiment is currently <strong className="text-emerald-400">Cautiously Optimistic</strong>,
+                supported by stable domestic macro indicators and steady RBI rate trajectory.
               </p>
-              <p>
-                Based on your **{user?.risk_appetite}** risk profile, your portfolio is underweighted in **Flexi Cap** assets by 15.2%. We suggest routing upcoming monthly SIP allocations to **Parag Parikh Flexi Cap Fund** to capture global valuation margins.
-              </p>
+              {!hasActiveHoldings ? (
+                <p>
+                  Your portfolio is currently empty.{" "}
+                  <strong className="text-white">Add your first transaction</strong> via the Portfolio page to
+                  unlock personalized AI insights, rebalancing signals, and XIRR analysis.
+                </p>
+              ) : (
+                <p>
+                  Based on your{" "}
+                  <strong className="text-emerald-400">{user?.risk_appetite || "Moderate"}</strong>{" "}
+                  risk profile, review your allocation vs the target model in the Portfolio page.
+                  Chat with the AI Advisor for personalized rebalancing recommendations.
+                </p>
+              )}
             </div>
           </div>
-          
+
           <button
             onClick={() => router.push("/chat")}
             className="flex items-center justify-center gap-1.5 w-full bg-slate-900 border border-white/10 hover:bg-slate-800 py-2.5 rounded-lg text-xs font-bold text-white transition-all mt-4"
           >
-            Review Custom Rebalancing Recommendations
+            {hasActiveHoldings ? "Review Custom Rebalancing Recommendations" : "Ask AI Advisor a Question"}
             <ChevronRight size={14} />
           </button>
         </div>
+
       </div>
 
       {/* Groww Top Movers & Trending Sectors Grid */}

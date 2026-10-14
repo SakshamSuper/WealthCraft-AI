@@ -6,6 +6,7 @@ from app.core import security
 from app.crud import crud
 from app.schemas import schemas
 from app.api import deps
+from app.models.models import User
 from datetime import timedelta
 from typing import Any
 
