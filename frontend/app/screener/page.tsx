@@ -84,52 +84,13 @@ function ScreenerPageContent() {
     fetchFunds();
   };
 
-  const handleSelectFund = async (fundId: number) => {
-    setChartLoading(true);
-    setSelectedFund(null);
-    setNavHistory([]);
-    setForecast(null);
-    setShowAddForm(false);
-    setAddSuccess(false);
-
-    try {
-      // Find if clicked fund is custom/public in search results
-      const clickedFund = funds.find((f) => f.id === fundId);
-      let fund: any;
-      if (clickedFund && clickedFund.is_custom) {
-        // Resolve it on the fly first
-        fund = await api.resolveFund(fundId, clickedFund.name, clickedFund.ticker);
-        // Refresh local funds list so this fund shows as resolved (is_custom: false)
-        setFunds(prev => prev.map(f => f.id === fundId ? { ...f, is_custom: false, expense_ratio: fund.expense_ratio } : f));
-      } else {
-        fund = await api.getFundDetails(fundId);
-      }
-      
-      setSelectedFund(fund);
-      setPurchasePrice(fund.min_lumpsum ? fund.min_lumpsum / 50 : 100); // set default purchase price guess
-
-      const history = await api.getFundNAVHistory(fundId);
-      setNavHistory(history.map((h: any) => ({
-        date: new Date(h.date).toLocaleDateString(undefined, { month: "short", year: "2-digit" }),
-        NAV: h.nav
-      })));
-
-      const forecastData = await api.getFundForecast(fundId);
-      // Format forecast details for line chart
-      const formattedForecast = forecastData.dates.map((d: string, idx: number) => ({
-        date: new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-        Predicted: forecastData.nav[idx],
-        Lower: forecastData.lower_bound[idx],
-        Upper: forecastData.upper_bound[idx]
-      }));
-      setForecast({
-        ...forecastData,
-        chartData: formattedForecast
-      });
-    } catch (err) {
-      console.error("Error loading fund details:", err);
-    } finally {
-      setChartLoading(false);
+  const handleSelectFund = (fundId: number) => {
+    // Immediately open modal with the clicked asset from memory
+    const clickedFund = funds.find((f) => f.id === fundId);
+    if (clickedFund) {
+      setSelectedFund(clickedFund);
+    } else {
+      setSelectedFund({ id: fundId, name: "Asset Details" } as any);
     }
   };
 
@@ -352,7 +313,15 @@ function ScreenerPageContent() {
                           </span>
                         </td>
                         <td className="px-5 py-4 text-right">
-                          <button className="text-emerald-400 hover:text-emerald-300 flex items-center gap-0.5 ml-auto">
+                          <button 
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleSelectFund(f.id);
+                            }}
+                            className="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-0.5 ml-auto cursor-pointer p-1 rounded hover:bg-emerald-500/10 transition-colors"
+                          >
                             Details
                             <ChevronRight size={14} />
                           </button>
