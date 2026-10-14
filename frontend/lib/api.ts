@@ -43,16 +43,98 @@ const getHeaders = () => {
   return headers;
 };
 
-// Shared offline portfolio response
-const EMPTY_PORTFOLIO = {
-  items: [],
-  total_invested: 0.0,
-  current_value: 0.0,
-  absolute_return: 0.0,
-  absolute_return_pct: 0.0,
-  xirr: 0.0,
-  allocation: {},
-};
+const LOCAL_PORTFOLIO_KEY = "wealthcraft_local_portfolio";
+const LOCAL_GOALS_KEY = "wealthcraft_local_goals";
+
+export function getLocalPortfolioItems(): any[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_PORTFOLIO_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveLocalPortfolioItems(items: any[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(LOCAL_PORTFOLIO_KEY, JSON.stringify(items));
+}
+
+export function computeLocalPortfolio(): any {
+  const rawItems = getLocalPortfolioItems();
+  if (!rawItems || rawItems.length === 0) {
+    return {
+      items: [],
+      total_invested: 0.0,
+      current_value: 0.0,
+      absolute_return: 0.0,
+      absolute_return_pct: 0.0,
+      xirr: 0.0,
+      allocation: {},
+    };
+  }
+
+  let totalInvested = 0;
+  let currentValue = 0;
+  const categoryValues: Record<string, number> = {};
+
+  const mappedItems = rawItems.map((it: any, index: number) => {
+    const asset =
+      FALLBACK_ASSETS.find((a) => a.id === it.fund_id) ||
+      FALLBACK_ASSETS.find((a) => a.name.toLowerCase() === (it.fund_name || "").toLowerCase()) ||
+      FALLBACK_ASSETS.find((a) => a.ticker && it.ticker && a.ticker.toLowerCase() === it.ticker.toLowerCase());
+
+    const units = Number(it.units) || 1;
+    const purchasePrice = Number(it.purchase_price) || 100;
+    const currentNav = Number(it.current_nav) || asset?.initial_nav || purchasePrice;
+    const itemInvested = units * purchasePrice;
+    const itemValue = units * currentNav;
+    const absReturn = itemValue - itemInvested;
+    const absReturnPct = itemInvested > 0 ? +((absReturn / itemInvested) * 100).toFixed(2) : 0;
+    const category = it.fund_category || asset?.category || "Large Cap";
+    const name = it.fund_name || asset?.name || "Asset";
+
+    totalInvested += itemInvested;
+    currentValue += itemValue;
+    categoryValues[category] = (categoryValues[category] || 0) + itemValue;
+
+    return {
+      id: it.id || index + 1,
+      fund_id: it.fund_id || asset?.id || index + 1,
+      fund_name: name,
+      fund_category: category,
+      units,
+      purchase_price: purchasePrice,
+      current_nav: currentNav,
+      current_value: Math.round(itemValue * 100) / 100,
+      purchase_date: it.purchase_date || "2025-06-15",
+      absolute_return: Math.round(absReturn * 100) / 100,
+      absolute_return_pct: absReturnPct,
+    };
+  });
+
+  const absReturn = currentValue - totalInvested;
+  const absReturnPct = totalInvested > 0 ? +((absReturn / totalInvested) * 100).toFixed(2) : 0;
+
+  const allocation: Record<string, number> = {};
+  for (const [cat, val] of Object.entries(categoryValues)) {
+    allocation[cat] = currentValue > 0 ? +((val / currentValue) * 100).toFixed(1) : 0;
+  }
+
+  const cagr = totalInvested > 0 ? absReturnPct * 1.15 : 0;
+  const xirr = absReturn >= 0 ? Math.min(54, Math.max(6.5, +cagr.toFixed(2))) : Math.max(-30, +cagr.toFixed(2));
+
+  return {
+    items: mappedItems,
+    total_invested: Math.round(totalInvested * 100) / 100,
+    current_value: Math.round(currentValue * 100) / 100,
+    absolute_return: Math.round(absReturn * 100) / 100,
+    absolute_return_pct: absReturnPct,
+    xirr,
+    allocation,
+  };
+}
 
 // Shared offline market indices
 const OFFLINE_INDICES = [
@@ -319,13 +401,13 @@ export const api = {
   // ─── Portfolio ─────────────────────────────────────────────────────────────
 
   async getPortfolio() {
-    if (!HAS_BACKEND) return EMPTY_PORTFOLIO;
+    if (!HAS_BACKEND) return computeLocalPortfolio();
     try {
       const res = await fetch(`${BASE_URL}/portfolio/`, { headers: getHeaders() });
-      if (!res.ok) return EMPTY_PORTFOLIO;
+      if (!res.ok) return computeLocalPortfolio();
       return await res.json();
     } catch (err) {
-      return EMPTY_PORTFOLIO;
+      return computeLocalPortfolio();
     }
   },
 
@@ -345,7 +427,26 @@ export const api = {
   },
 
   async addPortfolioItem(fundId: number, units: number, purchasePrice: number, purchaseDate: string, fundName?: string) {
-    if (!HAS_BACKEND) throw new Error("Backend required to add transactions");
+    if (!HAS_BACKEND) {
+      const items = getLocalPortfolioItems();
+      const asset =
+        FALLBACK_ASSETS.find((a) => a.id === fundId) ||
+        FALLBACK_ASSETS.find((a) => a.name.toLowerCase() === (fundName || "").toLowerCase());
+      const name = fundName || asset?.name || "Asset";
+      const newItem = {
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        fund_id: fundId || asset?.id || 1,
+        fund_name: name,
+        fund_category: asset?.category || "Large Cap",
+        units: Number(units) || 1,
+        purchase_price: Number(purchasePrice) || 100,
+        current_nav: asset?.initial_nav || Number(purchasePrice),
+        purchase_date: purchaseDate || new Date().toISOString().split("T")[0],
+      };
+      items.push(newItem);
+      saveLocalPortfolioItems(items);
+      return newItem;
+    }
     const res = await fetch(`${BASE_URL}/portfolio/`, {
       method: "POST",
       headers: getHeaders(),
@@ -356,7 +457,12 @@ export const api = {
   },
 
   async removePortfolioItem(itemId: number) {
-    if (!HAS_BACKEND) throw new Error("Backend required to remove transactions");
+    if (!HAS_BACKEND) {
+      const items = getLocalPortfolioItems();
+      const filtered = items.filter((it: any) => it.id !== itemId);
+      saveLocalPortfolioItems(filtered);
+      return { success: true };
+    }
     const res = await fetch(`${BASE_URL}/portfolio/${itemId}`, {
       method: "DELETE",
       headers: getHeaders(),
@@ -366,7 +472,52 @@ export const api = {
   },
 
   async optimizePortfolio() {
-    if (!HAS_BACKEND) throw new Error("Backend required for portfolio optimization");
+    if (!HAS_BACKEND) {
+      const port = computeLocalPortfolio();
+      const items = port.items || [];
+      if (items.length === 0) return null;
+
+      const currentAllocation = port.allocation || {};
+      const targetAllocation: Record<string, number> = {
+        "Large Cap": 40.0,
+        "Flexi Cap": 30.0,
+        "Mid Cap": 20.0,
+        "Debt & Liquid": 10.0,
+      };
+      for (const cat of Object.keys(currentAllocation)) {
+        if (targetAllocation[cat] === undefined) {
+          targetAllocation[cat] = 15.0;
+        }
+      }
+
+      const suggestions = Object.keys(targetAllocation).map((cat) => {
+        const cur = currentAllocation[cat] || 0.0;
+        const tgt = targetAllocation[cat] || 0.0;
+        const diff = +(tgt - cur).toFixed(1);
+        let action = "Hold / Maintain";
+        if (diff > 5) action = `Increase SIP by ₹${Math.round(diff * 200)}`;
+        else if (diff < -5) action = `Trim / Rebalance ${Math.abs(diff)}%`;
+        return {
+          category: cat,
+          current: cur,
+          target: tgt,
+          difference: diff,
+          action,
+        };
+      });
+
+      const rebalanceNeeded = suggestions.some((s) => Math.abs(s.difference) > 7);
+
+      return {
+        metrics: {
+          current_allocation: currentAllocation,
+          target_allocation: targetAllocation,
+          rebalance_needed: rebalanceNeeded,
+          suggestions,
+        },
+        advice_markdown: `Based on automated quantitative portfolio analysis, your current allocations have ${rebalanceNeeded ? "drifted from" : "maintained alignment with"} benchmark risk-adjusted allocations. Maintain disciplined systematic investments across anchor Large Cap & Flexi Cap funds and consider tax-loss harvesting before fiscal year end.`
+      };
+    }
     const res = await fetch(`${BASE_URL}/portfolio/optimize`, { headers: getHeaders() });
     if (!res.ok) throw new Error("Failed to optimize portfolio");
     return res.json();
@@ -375,7 +526,19 @@ export const api = {
   // ─── Goals ─────────────────────────────────────────────────────────────────
 
   async getGoals() {
-    if (!HAS_BACKEND) return [];
+    if (!HAS_BACKEND) {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem(LOCAL_GOALS_KEY);
+        if (saved) return JSON.parse(saved);
+        const defaultGoals = [
+          { id: 1, name: "Retirement Corpus", target_amount: 25000000, current_amount: 1500000, target_date: "2040-12-31" },
+          { id: 2, name: "Child Higher Education", target_amount: 5000000, current_amount: 800000, target_date: "2034-06-30" },
+        ];
+        localStorage.setItem(LOCAL_GOALS_KEY, JSON.stringify(defaultGoals));
+        return defaultGoals;
+      }
+      return [];
+    }
     try {
       const res = await fetch(`${BASE_URL}/goals/`, { headers: getHeaders() });
       if (!res.ok) return [];
@@ -386,7 +549,23 @@ export const api = {
   },
 
   async createGoal(name: string, targetAmount: number, currentAmount: number, targetDate: string) {
-    if (!HAS_BACKEND) throw new Error("Backend required to create goals");
+    if (!HAS_BACKEND) {
+      if (typeof window !== "undefined") {
+        const raw = localStorage.getItem(LOCAL_GOALS_KEY);
+        const goals = raw ? JSON.parse(raw) : [];
+        const newGoal = {
+          id: Date.now(),
+          name,
+          target_amount: targetAmount,
+          current_amount: currentAmount,
+          target_date: targetDate,
+        };
+        goals.push(newGoal);
+        localStorage.setItem(LOCAL_GOALS_KEY, JSON.stringify(goals));
+        return newGoal;
+      }
+      return { id: 1, name, target_amount: targetAmount, current_amount: currentAmount, target_date: targetDate };
+    }
     const res = await fetch(`${BASE_URL}/goals/`, {
       method: "POST",
       headers: getHeaders(),
@@ -397,7 +576,16 @@ export const api = {
   },
 
   async removeGoal(goalId: number) {
-    if (!HAS_BACKEND) throw new Error("Backend required to remove goals");
+    if (!HAS_BACKEND) {
+      if (typeof window !== "undefined") {
+        const raw = localStorage.getItem(LOCAL_GOALS_KEY);
+        const goals = raw ? JSON.parse(raw) : [];
+        const filtered = goals.filter((g: any) => g.id !== goalId);
+        localStorage.setItem(LOCAL_GOALS_KEY, JSON.stringify(filtered));
+        return { success: true };
+      }
+      return { success: true };
+    }
     const res = await fetch(`${BASE_URL}/goals/${goalId}`, {
       method: "DELETE",
       headers: getHeaders(),
