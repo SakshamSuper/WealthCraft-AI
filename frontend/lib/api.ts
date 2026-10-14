@@ -1,8 +1,17 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
+const getBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+    return "https://wealthcraft-api.loca.lt/api/v1";
+  }
+  return "http://127.0.0.1:8000/api/v1";
+};
+
+const BASE_URL = getBaseUrl();
 
 const getHeaders = () => {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    "Bypass-Tunnel-Reminder": "true",
   };
   
   if (typeof window !== "undefined") {
