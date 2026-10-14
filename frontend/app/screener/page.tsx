@@ -4,12 +4,13 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { 
-  Search, SlidersHorizontal, ChevronRight, X, TrendingUp, Sparkles, Plus, PlusCircle, CheckCircle, Calculator, RefreshCw 
+  Search, SlidersHorizontal, ChevronRight, X, TrendingUp, Sparkles, Plus, PlusCircle, CheckCircle, Calculator, RefreshCw, Star 
 } from "lucide-react";
 import { 
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line 
 } from "recharts";
 import AssetDetailModal from "@/components/AssetDetailModal";
+import { watchlist } from "@/lib/watchlist";
 
 function ScreenerPageContent() {
   const searchParams = useSearchParams();
@@ -20,7 +21,8 @@ function ScreenerPageContent() {
   const [category, setCategory] = useState("");
   const [risk, setRisk] = useState("");
   const [minRating, setMinRating] = useState<number | "">("");
-  const [assetType, setAssetType] = useState<"ALL" | "STOCKS" | "MFS" | "ETFS">("ALL");
+  const [assetType, setAssetType] = useState<"ALL" | "STOCKS" | "MFS" | "ETFS" | "WATCHLIST">("ALL");
+  const [watchlistIds, setWatchlistIds] = useState<number[]>([]);
 
   // Detailed Modal/Pane state
   const [selectedFund, setSelectedFund] = useState<any | null>(null);
@@ -38,6 +40,8 @@ function ScreenerPageContent() {
   useEffect(() => {
     setMounted(true);
     fetchFunds();
+    setWatchlistIds(watchlist.getWatchlist());
+    const unsub = watchlist.subscribe((list) => setWatchlistIds(list));
     
     // Check if query parameter has pre-selected fund ID
     const queryId = searchParams.get("id");
@@ -112,6 +116,8 @@ function ScreenerPageContent() {
   if (!mounted) return null;
 
   const filteredFunds = funds.filter((f) => {
+    if (assetType === "WATCHLIST") return watchlistIds.includes(f.id);
+
     const isETF = (f.category && f.category.toLowerCase().includes("etf")) || (f.name && f.name.toLowerCase().includes("etf")) || (f.ticker && f.ticker.toLowerCase().includes("bees"));
     const isStock = ((f.category === "Listed Stock" || f.category === "Stock" || f.category === "Equity Stock") || (f.ticker && (f.ticker.endsWith(".NS") || f.ticker.endsWith(".BO")))) && !isETF;
     const isMF = !isStock && !isETF;
@@ -132,11 +138,11 @@ function ScreenerPageContent() {
         </div>
 
         {/* Asset Type Segment Buttons */}
-        <div className="flex items-center p-1 rounded-xl bg-slate-950/60 border border-white/10 glass-panel">
+        <div className="flex items-center p-1 rounded-xl bg-slate-950/60 border border-white/10 glass-panel overflow-x-auto">
           <button
             type="button"
             onClick={() => setAssetType("ALL")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               assetType === "ALL"
                 ? "bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20"
                 : "text-slate-400 hover:text-white"
@@ -146,8 +152,20 @@ function ScreenerPageContent() {
           </button>
           <button
             type="button"
+            onClick={() => setAssetType("WATCHLIST")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+              assetType === "WATCHLIST"
+                ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Star size={12} className={assetType === "WATCHLIST" ? "fill-slate-950" : "fill-amber-400 text-amber-400"} />
+            Watchlist ({watchlistIds.length})
+          </button>
+          <button
+            type="button"
             onClick={() => setAssetType("STOCKS")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               assetType === "STOCKS"
                 ? "bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20"
                 : "text-slate-400 hover:text-white"
@@ -158,7 +176,7 @@ function ScreenerPageContent() {
           <button
             type="button"
             onClick={() => setAssetType("MFS")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               assetType === "MFS"
                 ? "bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20"
                 : "text-slate-400 hover:text-white"
@@ -169,7 +187,7 @@ function ScreenerPageContent() {
           <button
             type="button"
             onClick={() => setAssetType("ETFS")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               assetType === "ETFS"
                 ? "bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20"
                 : "text-slate-400 hover:text-white"
@@ -282,8 +300,24 @@ function ScreenerPageContent() {
                         onClick={() => handleSelectFund(f.id)}
                         className={`hover:bg-white/5 transition-all cursor-pointer ${selectedFund?.id === f.id ? "bg-emerald-500/5" : ""}`}
                       >
-                        <td className="px-5 py-4 max-w-[240px]">
+                        <td className="px-5 py-4 max-w-[260px]">
                           <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                watchlist.toggleWatchlist(f.id);
+                                setWatchlistIds(watchlist.getWatchlist());
+                              }}
+                              className="p-1 rounded hover:bg-white/10 text-slate-500 hover:text-amber-400 transition-colors shrink-0"
+                              title={watchlistIds.includes(f.id) ? "Remove from Watchlist" : "Add to Watchlist"}
+                            >
+                              <Star
+                                size={14}
+                                className={watchlistIds.includes(f.id) ? "fill-amber-400 text-amber-400" : ""}
+                              />
+                            </button>
                             <span className="font-bold text-white truncate block">{f.name}</span>
                             {f.ticker && (
                               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10 shrink-0">
@@ -292,7 +326,7 @@ function ScreenerPageContent() {
                             )}
                           </div>
                           {f.sector && (
-                            <span className="text-[10px] text-slate-500 block truncate">{f.sector}</span>
+                            <span className="text-[10px] text-slate-500 block truncate pl-6">{f.sector}</span>
                           )}
                         </td>
                         <td className="px-4 py-4 text-slate-400 font-medium">

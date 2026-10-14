@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import AssetDetailModal from "@/components/AssetDetailModal";
+import ScanPortfolioModal from "@/components/ScanPortfolioModal";
+import PortfolioOverlapModal from "@/components/PortfolioOverlapModal";
+import TaxHarvestingOptimizer from "@/components/TaxHarvestingOptimizer";
 import { 
-  Briefcase, Trash2, ShieldAlert, CheckCircle, RefreshCw, BarChart3, TrendingUp, AlertTriangle, Sparkles, Plus, Search, X 
+  Briefcase, Trash2, ShieldAlert, CheckCircle, RefreshCw, BarChart3, TrendingUp, AlertTriangle, Sparkles, Plus, Search, X, Camera, Layers, ShieldCheck 
 } from "lucide-react";
 import { 
   ResponsiveContainer, BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell 
@@ -25,6 +28,8 @@ export default function PortfolioPage() {
   
   // Add Transaction Modal state
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showScanModal, setShowScanModal] = useState(false);
+  const [showOverlapModal, setShowOverlapModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
@@ -223,23 +228,45 @@ export default function PortfolioPage() {
 
       {/* Portfolio Holdings Table */}
       <div className="glass-panel p-6 bg-slate-950/40">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <h2 className="font-heading font-bold text-lg text-white flex items-center gap-1.5 mb-0">
             <Briefcase className="text-emerald-400" size={18} />
             Current Holdings Log
           </h2>
-          <button
-            onClick={() => {
-              setSelectedFund(null);
-              setSearchQuery("");
-              setSearchResults([]);
-              setShowAddModal(true);
-            }}
-            className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 cursor-pointer transition-all shadow-md shadow-emerald-500/10"
-          >
-            <Plus size={14} />
-            Add Transaction
-          </button>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowScanModal(true)}
+              className="bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-md shadow-indigo-500/10"
+            >
+              <Camera size={14} />
+              Scan Photo / Report
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowOverlapModal(true)}
+              className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-md shadow-purple-500/10"
+            >
+              <Layers size={14} />
+              Overlap X-Ray
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedFund(null);
+                setSearchQuery("");
+                setSearchResults([]);
+                setShowAddModal(true);
+              }}
+              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 cursor-pointer transition-all shadow-md shadow-emerald-500/10"
+            >
+              <Plus size={14} />
+              Add Transaction
+            </button>
+          </div>
         </div>
 
         {portfolio?.items.length === 0 ? (
@@ -304,6 +331,9 @@ export default function PortfolioPage() {
           </div>
         )}
       </div>
+
+      {/* Indian Tax Harvesting & LTCG Optimizer (Section 112A) */}
+      <TaxHarvestingOptimizer portfolioItems={portfolio?.items || []} />
 
       {/* Optimizer & Rebalancing Advice Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -549,6 +579,19 @@ export default function PortfolioPage() {
         }}
         fundId={detailFundId}
         initialFund={detailFundObj}
+      />
+
+      {/* AI Holding & Statement Scanner Modal */}
+      <ScanPortfolioModal
+        isOpen={showScanModal}
+        onClose={() => setShowScanModal(false)}
+        onImportComplete={loadPortfolioData}
+      />
+
+      {/* Portfolio Overlap X-Ray Modal */}
+      <PortfolioOverlapModal
+        isOpen={showOverlapModal}
+        onClose={() => setShowOverlapModal(false)}
       />
     </div>
   );

@@ -9,6 +9,7 @@ import {
 import { 
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend 
 } from "recharts";
+import SipStepUpCalculator from "@/components/SipStepUpCalculator";
 
 export default function GoalsPage() {
   const router = useRouter();
@@ -401,6 +402,9 @@ export default function GoalsPage() {
           </div>
         )}
       </div>
+
+      {/* SIP Step-Up Visualizer */}
+      <SipStepUpCalculator />
     </div>
   );
 }
