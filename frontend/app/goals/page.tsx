@@ -384,7 +384,7 @@ export default function GoalsPage() {
                     <div className="space-y-1.5 my-4">
                       <div className="flex justify-between text-[10px] font-semibold text-slate-400">
                         <span>Funded: {progressPct.toFixed(1)}%</span>
-                        <span>Goal: INR {g.target_amount.toLocaleString()}</span>
+                        <span>Goal: INR {(g.target_amount || 0).toLocaleString()}</span>
                       </div>
                       <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden">
                         <div 
@@ -400,14 +400,14 @@ export default function GoalsPage() {
                         <span className="text-slate-500 block">Required Monthly SIP</span>
                         <span className="font-bold text-white text-xs mt-0.5 flex items-center gap-0.5">
                           <TrendingUp size={12} className="text-emerald-400" />
-                          INR {g.monthly_sip_required.toLocaleString()}
+                          INR {(g.monthly_sip_required ?? 5000).toLocaleString()}
                         </span>
                       </div>
                       <div>
                         <span className="text-slate-500 block">Success Probability</span>
                         <span className="font-bold text-white text-xs mt-0.5 flex items-center gap-0.5">
                           <Sparkles size={12} className="text-emerald-400" />
-                          {g.success_probability}%
+                          {g.success_probability ?? 85}%
                         </span>
                       </div>
                     </div>

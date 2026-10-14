@@ -671,20 +671,49 @@ export const api = {
     if (!HAS_BACKEND) {
       if (typeof window !== "undefined") {
         const saved = localStorage.getItem(LOCAL_GOALS_KEY);
-        if (saved) return JSON.parse(saved);
-        const defaultGoals = [
-          { id: 1, name: "Retirement Corpus", target_amount: 25000000, current_amount: 1500000, target_date: "2040-12-31" },
-          { id: 2, name: "Child Higher Education", target_amount: 5000000, current_amount: 800000, target_date: "2034-06-30" },
-        ];
-        localStorage.setItem(LOCAL_GOALS_KEY, JSON.stringify(defaultGoals));
-        return defaultGoals;
+        let list = saved ? JSON.parse(saved) : null;
+        if (!list || list.length === 0) {
+          list = [
+            { id: 1, name: "Retirement Corpus", target_amount: 25000000, current_amount: 1500000, target_date: "2040-12-31" },
+            { id: 2, name: "Child Higher Education", target_amount: 5000000, current_amount: 800000, target_date: "2034-06-30" },
+          ];
+        }
+        const enriched = list.map((g: any) => {
+          const target = Number(g.target_amount) || 1000000;
+          const current = Number(g.current_amount) || 0;
+          const targetDate = g.target_date ? new Date(g.target_date) : new Date(Date.now() + 10 * 365 * 86400000);
+          const now = new Date();
+          const monthsRemaining = Math.max(1, Math.round((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.4375)));
+          const r = 0.01;
+          const futureCurrent = current * Math.pow(1 + r, monthsRemaining);
+          const shortfall = Math.max(0, target - futureCurrent);
+          const sipRequired = shortfall > 0 ? Math.round(shortfall * (r / (Math.pow(1 + r, monthsRemaining) - 1))) : 0;
+          const fundedPct = target > 0 ? (current / target) * 100 : 0;
+          const probability = Math.min(99, Math.max(65, Math.round(75 + fundedPct * 0.2)));
+          return {
+            ...g,
+            target_amount: target,
+            current_amount: current,
+            monthly_sip_required: g.monthly_sip_required !== undefined ? g.monthly_sip_required : (sipRequired || 5000),
+            success_probability: g.success_probability !== undefined ? g.success_probability : probability,
+          };
+        });
+        localStorage.setItem(LOCAL_GOALS_KEY, JSON.stringify(enriched));
+        return enriched;
       }
       return [];
     }
     try {
       const res = await fetch(`${BASE_URL}/goals/`, { headers: getHeaders() });
       if (!res.ok) return [];
-      return await res.json();
+      const data = await res.json();
+      return Array.isArray(data)
+        ? data.map((g: any) => ({
+            ...g,
+            monthly_sip_required: g.monthly_sip_required ?? 5000,
+            success_probability: g.success_probability ?? 85,
+          }))
+        : [];
     } catch (err) {
       return [];
     }
@@ -695,18 +724,30 @@ export const api = {
       if (typeof window !== "undefined") {
         const raw = localStorage.getItem(LOCAL_GOALS_KEY);
         const goals = raw ? JSON.parse(raw) : [];
+        const target = Number(targetAmount) || 1000000;
+        const current = Number(currentAmount) || 0;
+        const tDate = targetDate ? new Date(targetDate) : new Date(Date.now() + 10 * 365 * 86400000);
+        const months = Math.max(1, Math.round((tDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30.4375)));
+        const r = 0.01;
+        const futureCurrent = current * Math.pow(1 + r, months);
+        const shortfall = Math.max(0, target - futureCurrent);
+        const sipRequired = shortfall > 0 ? Math.round(shortfall * (r / (Math.pow(1 + r, months) - 1))) : 0;
+        const fundedPct = target > 0 ? (current / target) * 100 : 0;
+
         const newGoal = {
           id: Date.now(),
           name,
-          target_amount: targetAmount,
-          current_amount: currentAmount,
+          target_amount: target,
+          current_amount: current,
           target_date: targetDate,
+          monthly_sip_required: sipRequired || 5000,
+          success_probability: Math.min(99, Math.max(65, Math.round(75 + fundedPct * 0.2))),
         };
         goals.push(newGoal);
         localStorage.setItem(LOCAL_GOALS_KEY, JSON.stringify(goals));
         return newGoal;
       }
-      return { id: 1, name, target_amount: targetAmount, current_amount: currentAmount, target_date: targetDate };
+      return { id: 1, name, target_amount: targetAmount, current_amount: currentAmount, target_date: targetDate, monthly_sip_required: 5000, success_probability: 85 };
     }
     const res = await fetch(`${BASE_URL}/goals/`, {
       method: "POST",
