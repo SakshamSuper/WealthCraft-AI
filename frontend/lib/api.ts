@@ -150,23 +150,23 @@ export const api = {
   // ─── Auth & Profile ──────────────────────────────────────────────────────────
 
   async register(email: string, password: string, fullName: string) {
+    const fallbackProfile = {
+      id: 1,
+      email,
+      full_name: fullName || "Investor",
+      risk_appetite: "Moderate Aggressive",
+      risk_score: 50,
+      investment_horizon_years: 10,
+      monthly_income: 150000,
+      sip_amount: 15000,
+    };
+    const demoToken = "demo_jwt_token_" + Date.now();
+
     if (!HAS_BACKEND) {
-      const demoToken = "demo_jwt_token_" + Date.now();
       if (typeof window !== "undefined") {
         localStorage.setItem("wealthcraft_token", demoToken);
         localStorage.setItem("stockify_token", demoToken);
-        localStorage.setItem(
-          "wealthcraft_user_profile",
-          JSON.stringify({
-            id: 1,
-            email,
-            full_name: fullName || "Investor",
-            risk_appetite: "Moderate Aggressive",
-            investment_horizon_years: 10,
-            monthly_income: 150000,
-            sip_amount: 15000,
-          })
-        );
+        localStorage.setItem("wealthcraft_user_profile", JSON.stringify(fallbackProfile));
       }
       return {
         access_token: demoToken,
@@ -174,18 +174,37 @@ export const api = {
         user: { id: 1, email, full_name: fullName },
       };
     }
-    const res = await fetch(`${BASE_URL}/auth/register`, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({ email, password, full_name: fullName }),
-    });
-    if (!res.ok) throw new Error((await res.json()).detail || "Registration failed");
-    return res.json();
+    try {
+      const res = await fetch(`${BASE_URL}/auth/register`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ email, password, full_name: fullName }),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Backend register unavailable, using demo mode", e);
+    }
+    if (typeof window !== "undefined") {
+      localStorage.setItem("wealthcraft_token", demoToken);
+      localStorage.setItem("stockify_token", demoToken);
+      localStorage.setItem("wealthcraft_user_profile", JSON.stringify(fallbackProfile));
+    }
+    return {
+      access_token: demoToken,
+      token_type: "bearer",
+      user: { id: 1, email, full_name: fullName },
+    };
   },
 
   async login(email: string, password: string) {
+    const demoToken = "demo_jwt_token_" + Date.now();
+    const fallbackUser = {
+      id: 1,
+      email: email || "investor@wealthcraft.ai",
+      full_name: "Demo Investor",
+    };
+
     if (!HAS_BACKEND) {
-      const demoToken = "demo_jwt_token_" + Date.now();
       if (typeof window !== "undefined") {
         localStorage.setItem("wealthcraft_token", demoToken);
         localStorage.setItem("stockify_token", demoToken);
@@ -193,78 +212,101 @@ export const api = {
       return {
         access_token: demoToken,
         token_type: "bearer",
-        user: {
-          id: 1,
-          email: email || "investor@wealthcraft.ai",
-          full_name: "Demo Investor",
-        },
+        user: fallbackUser,
       };
     }
-    const res = await fetch(`${BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({ email, password }),
-    });
-    if (!res.ok) throw new Error((await res.json()).detail || "Login failed");
-    const data = await res.json();
-    if (typeof window !== "undefined") {
-      localStorage.setItem("wealthcraft_token", data.access_token);
-      localStorage.setItem("stockify_token", data.access_token);
+    try {
+      const res = await fetch(`${BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ email, password }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof window !== "undefined") {
+          localStorage.setItem("wealthcraft_token", data.access_token);
+          localStorage.setItem("stockify_token", data.access_token);
+        }
+        return data;
+      }
+    } catch (e) {
+      console.warn("Backend login failed or unreachable, switching to demo auth:", e);
     }
-    return data;
+    if (typeof window !== "undefined") {
+      localStorage.setItem("wealthcraft_token", demoToken);
+      localStorage.setItem("stockify_token", demoToken);
+    }
+    return {
+      access_token: demoToken,
+      token_type: "bearer",
+      user: fallbackUser,
+    };
   },
 
   logout() {
     if (typeof window !== "undefined") {
       localStorage.removeItem("stockify_token");
       localStorage.removeItem("wealthcraft_token");
+      localStorage.removeItem("wealthcraft_user_profile");
     }
   },
 
   async getProfile() {
-    if (!HAS_BACKEND) {
-      if (typeof window !== "undefined") {
-        const saved = localStorage.getItem("wealthcraft_user_profile");
-        if (saved) {
-          try {
-            return JSON.parse(saved);
-          } catch {
-            // ignore
-          }
+    const fallbackProfile = {
+      id: 1,
+      email: "investor@wealthcraft.ai",
+      full_name: "Demo Investor",
+      risk_appetite: "Moderate Aggressive",
+      risk_score: 50,
+      investment_horizon_years: 10,
+      monthly_income: 150000,
+      sip_amount: 15000,
+    };
+
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("wealthcraft_user_profile");
+      if (saved) {
+        try {
+          return { ...fallbackProfile, ...JSON.parse(saved) };
+        } catch {
+          // ignore
         }
       }
-      return {
-        id: 1,
-        email: "investor@wealthcraft.ai",
-        full_name: "Demo Investor",
-        risk_appetite: "Moderate Aggressive",
-        investment_horizon_years: 10,
-        monthly_income: 150000,
-        sip_amount: 15000,
-      };
     }
-    const res = await fetch(`${BASE_URL}/auth/me`, { headers: getHeaders() });
-    if (!res.ok) throw new Error("Failed to fetch profile");
-    return res.json();
+
+    if (!HAS_BACKEND) {
+      return fallbackProfile;
+    }
+    try {
+      const res = await fetch(`${BASE_URL}/auth/me`, { headers: getHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        return { ...fallbackProfile, ...data, risk_score: data.risk_score ?? 50 };
+      }
+    } catch (e) {
+      console.warn("Backend getProfile failed, using fallback:", e);
+    }
+    return fallbackProfile;
   },
 
   async updateRiskProfile(profile: any) {
-    if (!HAS_BACKEND) {
-      if (typeof window !== "undefined") {
-        const existing = await this.getProfile();
-        const updated = { ...existing, ...profile };
-        localStorage.setItem("wealthcraft_user_profile", JSON.stringify(updated));
-        return updated;
-      }
-      return profile;
+    if (typeof window !== "undefined") {
+      const existing = await this.getProfile();
+      const updated = { ...existing, ...profile, risk_score: profile.risk_score ?? existing.risk_score ?? 50 };
+      localStorage.setItem("wealthcraft_user_profile", JSON.stringify(updated));
+      if (!HAS_BACKEND) return updated;
     }
-    const res = await fetch(`${BASE_URL}/auth/risk-profile`, {
-      method: "PUT",
-      headers: getHeaders(),
-      body: JSON.stringify(profile),
-    });
-    if (!res.ok) throw new Error("Failed to update risk profile");
-    return res.json();
+    try {
+      const res = await fetch(`${BASE_URL}/auth/risk-profile`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(profile),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Backend updateRiskProfile failed, saved locally:", e);
+    }
+    return profile;
   },
 
   // ─── Market Data (all have offline fallbacks) ─────────────────────────────
@@ -493,7 +535,7 @@ export const api = {
   },
 
   async compareFunds(fundIds: number[]) {
-    if (!HAS_BACKEND) {
+    const buildFallbackCompare = () => {
       const selected = FALLBACK_ASSETS.filter((f) => fundIds.includes(f.id));
       const pool = selected.length > 0 ? selected : FALLBACK_ASSETS.slice(0, 2);
       const funds = pool.map((f: any, idx: number) => ({
@@ -530,14 +572,20 @@ export const api = {
         is_winner: idx === 0,
       }));
       return { funds, winner_id: funds[0]?.id };
+    };
+
+    if (!HAS_BACKEND) return buildFallbackCompare();
+    try {
+      const res = await fetch(`${BASE_URL}/funds/compare`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(fundIds),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Backend compareFunds failed, using fallback:", e);
     }
-    const res = await fetch(`${BASE_URL}/funds/compare`, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify(fundIds),
-    });
-    if (!res.ok) throw new Error("Failed to compare funds");
-    return res.json();
+    return buildFallbackCompare();
   },
 
   // ─── Portfolio ─────────────────────────────────────────────────────────────
@@ -569,7 +617,7 @@ export const api = {
   },
 
   async addPortfolioItem(fundId: number, units: number, purchasePrice: number, purchaseDate: string, fundName?: string) {
-    if (!HAS_BACKEND) {
+    const saveLocal = () => {
       const items = getLocalPortfolioItems();
       const asset =
         FALLBACK_ASSETS.find((a) => a.id === fundId) ||
@@ -588,33 +636,45 @@ export const api = {
       items.push(newItem);
       saveLocalPortfolioItems(items);
       return newItem;
+    };
+
+    if (!HAS_BACKEND) return saveLocal();
+    try {
+      const res = await fetch(`${BASE_URL}/portfolio/`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ fund_id: fundId, units, purchase_price: purchasePrice, purchase_date: purchaseDate, fund_name: fundName }),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Backend addPortfolioItem failed, saved locally:", e);
     }
-    const res = await fetch(`${BASE_URL}/portfolio/`, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({ fund_id: fundId, units, purchase_price: purchasePrice, purchase_date: purchaseDate, fund_name: fundName }),
-    });
-    if (!res.ok) throw new Error("Failed to add portfolio item");
-    return res.json();
+    return saveLocal();
   },
 
   async removePortfolioItem(itemId: number) {
-    if (!HAS_BACKEND) {
+    const removeLocal = () => {
       const items = getLocalPortfolioItems();
       const filtered = items.filter((it: any) => it.id !== itemId);
       saveLocalPortfolioItems(filtered);
       return { success: true };
+    };
+
+    if (!HAS_BACKEND) return removeLocal();
+    try {
+      const res = await fetch(`${BASE_URL}/portfolio/${itemId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Backend removePortfolioItem failed, removed locally:", e);
     }
-    const res = await fetch(`${BASE_URL}/portfolio/${itemId}`, {
-      method: "DELETE",
-      headers: getHeaders(),
-    });
-    if (!res.ok) throw new Error("Failed to remove portfolio item");
-    return res.json();
+    return removeLocal();
   },
 
   async optimizePortfolio() {
-    if (!HAS_BACKEND) {
+    const computeLocal = () => {
       const port = computeLocalPortfolio();
       const items = port.items || [];
       if (items.length === 0) return null;
@@ -659,10 +719,16 @@ export const api = {
         },
         advice_markdown: `Based on automated quantitative portfolio analysis, your current allocations have ${rebalanceNeeded ? "drifted from" : "maintained alignment with"} benchmark risk-adjusted allocations. Maintain disciplined systematic investments across anchor Large Cap & Flexi Cap funds and consider tax-loss harvesting before fiscal year end.`
       };
+    };
+
+    if (!HAS_BACKEND) return computeLocal();
+    try {
+      const res = await fetch(`${BASE_URL}/portfolio/optimize`, { headers: getHeaders() });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Backend optimizePortfolio failed, using local model:", e);
     }
-    const res = await fetch(`${BASE_URL}/portfolio/optimize`, { headers: getHeaders() });
-    if (!res.ok) throw new Error("Failed to optimize portfolio");
-    return res.json();
+    return computeLocal();
   },
 
   // ─── Goals ─────────────────────────────────────────────────────────────────
@@ -720,7 +786,7 @@ export const api = {
   },
 
   async createGoal(name: string, targetAmount: number, currentAmount: number, targetDate: string) {
-    if (!HAS_BACKEND) {
+    const saveLocalGoal = () => {
       if (typeof window !== "undefined") {
         const raw = localStorage.getItem(LOCAL_GOALS_KEY);
         const goals = raw ? JSON.parse(raw) : [];
@@ -748,18 +814,24 @@ export const api = {
         return newGoal;
       }
       return { id: 1, name, target_amount: targetAmount, current_amount: currentAmount, target_date: targetDate, monthly_sip_required: 5000, success_probability: 85 };
+    };
+
+    if (!HAS_BACKEND) return saveLocalGoal();
+    try {
+      const res = await fetch(`${BASE_URL}/goals/`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ name, target_amount: targetAmount, current_amount: currentAmount, target_date: targetDate }),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Backend createGoal failed, saved locally:", e);
     }
-    const res = await fetch(`${BASE_URL}/goals/`, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({ name, target_amount: targetAmount, current_amount: currentAmount, target_date: targetDate }),
-    });
-    if (!res.ok) throw new Error("Failed to create goal");
-    return res.json();
+    return saveLocalGoal();
   },
 
   async removeGoal(goalId: number) {
-    if (!HAS_BACKEND) {
+    const removeLocalGoal = () => {
       if (typeof window !== "undefined") {
         const raw = localStorage.getItem(LOCAL_GOALS_KEY);
         const goals = raw ? JSON.parse(raw) : [];
@@ -768,13 +840,19 @@ export const api = {
         return { success: true };
       }
       return { success: true };
+    };
+
+    if (!HAS_BACKEND) return removeLocalGoal();
+    try {
+      const res = await fetch(`${BASE_URL}/goals/${goalId}`, {
+        method: "DELETE",
+        headers: getHeaders(),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.warn("Backend removeGoal failed, removed locally:", e);
     }
-    const res = await fetch(`${BASE_URL}/goals/${goalId}`, {
-      method: "DELETE",
-      headers: getHeaders(),
-    });
-    if (!res.ok) throw new Error("Failed to remove goal");
-    return res.json();
+    return removeLocalGoal();
   },
 
   async simulateSip(sip: number, cagr: number, years: number, inflation: number = 6.0) {

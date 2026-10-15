@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { 
   MessageSquare, Send, Sparkles, RefreshCw, Mic, MicOff, Volume2, ShieldCheck, Landmark, Users 
 } from "lucide-react";
+import { ensureSession } from "@/lib/auth";
 
 export default function ChatPage() {
   const router = useRouter();
@@ -22,11 +23,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     setMounted(true);
-    const token = localStorage.getItem("stockify_token");
-    if (!token) {
-      router.push("/");
-      return;
-    }
+    ensureSession();
     loadChatHistory();
     setupSpeechRecognition();
   }, [router]);

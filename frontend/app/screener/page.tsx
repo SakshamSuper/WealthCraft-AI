@@ -332,11 +332,15 @@ function ScreenerPageContent() {
                         <td className="px-4 py-4 text-slate-400 font-medium">
                           {f.category === "Listed Stock" && f.sector ? f.sector : f.category}
                         </td>
-                        <td className="px-4 py-4 text-amber-400 font-bold">{"★".repeat(f.fund_rating)}</td>
-                        <td className="px-4 py-4 text-white font-mono">
-                          {f.category === "Listed Stock" ? (f.pe_ratio ? `${f.pe_ratio}x` : "22.4x") : `${(f.expense_ratio * 100).toFixed(2)}%`}
+                        <td className="px-4 py-4 text-amber-400 font-bold">
+                          {"★".repeat(Math.max(1, Math.min(5, Math.round(Number(f.fund_rating) || 5))))}
                         </td>
-                        <td className="px-4 py-4 text-slate-300 font-semibold font-mono">₹{f.aum.toLocaleString()} Cr</td>
+                        <td className="px-4 py-4 text-white font-mono">
+                          {f.category === "Listed Stock" ? (f.pe_ratio ? `${f.pe_ratio}x` : "22.4x") : `${((Number(f.expense_ratio) || 0.0075) * 100).toFixed(2)}%`}
+                        </td>
+                        <td className="px-4 py-4 text-slate-300 font-semibold font-mono">
+                          ₹{(Number(f.aum) || 0).toLocaleString()} Cr
+                        </td>
                         <td className="px-4 py-4">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
                             f.risk_category === "Low" ? "bg-blue-500/10 text-blue-400" :

@@ -14,6 +14,8 @@ import {
 import TopMovers from "@/components/TopMovers";
 import TrendingSectors from "@/components/TrendingSectors";
 
+import { ensureSession } from "@/lib/auth";
+
 export default function DashboardPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -28,11 +30,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setMounted(true);
-    const token = localStorage.getItem("stockify_token");
-    if (!token) {
-      router.push("/");
-      return;
-    }
+    ensureSession();
 
     const fetchData = async () => {
       try {

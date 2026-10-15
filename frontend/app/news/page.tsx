@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { RefreshCw, Newspaper, TrendingUp } from "lucide-react";
+import { ensureSession } from "@/lib/auth";
 
 export default function NewsPage() {
   const router = useRouter();
@@ -25,11 +26,7 @@ export default function NewsPage() {
 
   useEffect(() => {
     setMounted(true);
-    const token = localStorage.getItem("stockify_token");
-    if (!token) {
-      router.push("/");
-      return;
-    }
+    ensureSession();
 
     const fetchNews = async () => {
       try {

@@ -271,14 +271,14 @@ export default function TopMovers() {
                       {/* Market Price & 1D Change */}
                       <td className="py-3.5 px-5 text-right">
                         <div className="font-bold text-white text-sm">
-                          ₹{Number(st.price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ₹{(Number(st.price) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                         <div className={`font-semibold ${colorClass} text-xs mt-0.5 flex items-center justify-end gap-1`}>
                           <span>
-                            {st.change > 0 ? `+${st.change.toFixed(2)}` : st.change.toFixed(2)}
+                            {(Number(st.change) || 0) > 0 ? `+${(Number(st.change) || 0).toFixed(2)}` : (Number(st.change) || 0).toFixed(2)}
                           </span>
                           <span>
-                            ({st.change_pct > 0 ? `+` : ""}{st.change_pct.toFixed(2)}%)
+                            ({(Number(st.change_pct) || 0) > 0 ? `+` : ""}{(Number(st.change_pct) || 0).toFixed(2)}%)
                           </span>
                         </div>
                       </td>

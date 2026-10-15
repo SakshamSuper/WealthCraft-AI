@@ -142,7 +142,7 @@ export default function TrendingSectors() {
                       {/* 1D Price Change */}
                       <td className="py-3 px-3 text-right">
                         <span className={`font-bold text-sm ${colorClass} inline-flex items-center gap-0.5`}>
-                          {sec.change_pct > 0 ? `+${sec.change_pct.toFixed(2)}%` : `${sec.change_pct.toFixed(2)}%`}
+                          {(Number(sec.change_pct) || 0) > 0 ? `+${(Number(sec.change_pct) || 0).toFixed(2)}%` : `${(Number(sec.change_pct) || 0).toFixed(2)}%`}
                         </span>
                       </td>
                     </tr>

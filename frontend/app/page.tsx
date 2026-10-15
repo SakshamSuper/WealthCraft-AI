@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { User, Mail, Lock, ShieldCheck, ArrowRight, Check, CheckCircle2, TrendingUp, Cpu, Landmark } from "lucide-react";
+import { getAuthToken, clearAuthSession } from "@/lib/auth";
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -36,17 +37,17 @@ export default function WelcomePage() {
 
   useEffect(() => {
     // If token exists, fetch profile and check onboarding
-    const token = localStorage.getItem("stockify_token");
+    const token = getAuthToken();
     if (token) {
       api.getProfile()
         .then((profile) => {
           setUser(profile);
-          if (profile.risk_score > 0) {
+          if ((profile?.risk_score ?? 50) > 0) {
             router.push("/dashboard");
           }
         })
         .catch(() => {
-          localStorage.removeItem("stockify_token");
+          clearAuthSession();
         });
     }
   }, [router]);
@@ -60,15 +61,16 @@ export default function WelcomePage() {
         await api.login(email, password);
         const profile = await api.getProfile();
         setUser(profile);
-        if (profile.risk_score > 0) {
-          router.push("/dashboard");
-        }
+        router.push("/dashboard");
       } else {
         await api.register(email, password, fullName);
         // Auto-login
         await api.login(email, password);
         const profile = await api.getProfile();
         setUser(profile);
+        if ((profile?.risk_score ?? 0) > 0) {
+          router.push("/dashboard");
+        }
       }
     } catch (err: any) {
       setError(err.message || "Authentication failed");

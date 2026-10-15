@@ -10,6 +10,7 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend 
 } from "recharts";
 import SipStepUpCalculator from "@/components/SipStepUpCalculator";
+import { ensureSession } from "@/lib/auth";
 
 export default function GoalsPage() {
   const router = useRouter();
@@ -36,11 +37,7 @@ export default function GoalsPage() {
 
   useEffect(() => {
     setMounted(true);
-    const token = localStorage.getItem("stockify_token");
-    if (!token) {
-      router.push("/");
-      return;
-    }
+    ensureSession();
     loadGoals();
   }, [router]);
 

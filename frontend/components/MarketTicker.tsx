@@ -138,27 +138,29 @@ export default function MarketTicker() {
   // Calculate Index Point Impact for each constituent stock
   // Impact = Index_Price * (Weight / 100) * (Stock_Change / 100)
   const constituentsWithImpact = activeConstituents.map((stk) => {
-    const idxPrice = selectedIdx?.price || 24187.70;
-    const pointImpact = idxPrice * (stk.weightPct / 100) * (stk.changePct / 100);
+    const idxPrice = Number(selectedIdx?.price) || 24187.70;
+    const stkWeight = Number(stk.weightPct) || 1.0;
+    const stkChange = Number(stk.changePct) || 0.0;
+    const pointImpact = idxPrice * (stkWeight / 100) * (stkChange / 100);
     return { ...stk, pointImpact };
   });
 
   // Filter constituents based on search and tab selection
   const filteredConstituents = constituentsWithImpact.filter((stk) => {
     const matchesSearch =
-      stk.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      stk.symbol.toLowerCase().includes(searchQuery.toLowerCase());
+      (stk.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (stk.symbol || "").toLowerCase().includes(searchQuery.toLowerCase());
     
     if (!matchesSearch) return false;
 
-    if (filterTab === "gainers") return stk.changePct > 0;
-    if (filterTab === "losers") return stk.changePct < 0;
-    if (filterTab === "heavyweights") return stk.weightPct >= 3.0;
+    if (filterTab === "gainers") return (Number(stk.changePct) || 0) > 0;
+    if (filterTab === "losers") return (Number(stk.changePct) || 0) < 0;
+    if (filterTab === "heavyweights") return (Number(stk.weightPct) || 0) >= 3.0;
     return true;
   });
 
   // Total Impact calculation of currently displayed stocks
-  const totalImpactPoints = filteredConstituents.reduce((sum, stk) => sum + stk.pointImpact, 0);
+  const totalImpactPoints = filteredConstituents.reduce((sum, stk) => sum + (Number(stk.pointImpact) || 0), 0);
 
   return (
     <>
@@ -167,7 +169,10 @@ export default function MarketTicker() {
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-6 min-w-max">
           <div className="flex items-center gap-6 sm:gap-8">
             {indices.map((idx, i) => {
-              const isPositive = idx.change >= 0;
+              const price = Number(idx.price) || 0;
+              const change = Number(idx.change) || 0;
+              const changePct = Number(idx.change_pct) || 0;
+              const isPositive = change >= 0;
               const colorClass = isPositive ? "text-[#00D09C]" : "text-[#EB5757]";
 
               return (
@@ -179,16 +184,16 @@ export default function MarketTicker() {
                     setFilterTab("all");
                   }}
                   className="flex items-center gap-2 font-medium text-xs hover:bg-[#181B20] px-2.5 py-1 rounded-lg transition-colors cursor-pointer text-left group"
-                  title={`Click for full Constituent Stocks & Price Impact breakdown for ${idx.name}`}
+                  title={`Click for full Constituent Stocks & Price Impact breakdown for ${idx.name || "Index"}`}
                 >
                   <span className="text-slate-300 font-bold tracking-wider uppercase text-[11px] group-hover:text-[#00D09C] transition-colors">
-                    {idx.name}
+                    {idx.name || "INDEX"}
                   </span>
                   <span className="text-white font-semibold font-mono">
-                    ₹{idx.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₹{price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                   <span className={`font-semibold ${colorClass} text-[11px] font-mono`}>
-                    {idx.change > 0 ? `+${idx.change.toFixed(2)}` : idx.change.toFixed(2)} ({Math.abs(idx.change_pct).toFixed(2)}%)
+                    {change > 0 ? `+${change.toFixed(2)}` : change.toFixed(2)} ({Math.abs(changePct).toFixed(2)}%)
                   </span>
                 </button>
               );
@@ -382,7 +387,7 @@ export default function MarketTicker() {
                           {/* Stock Change % */}
                           <td className="py-3 px-3 text-center font-mono font-bold">
                             <span className={`text-[11px] px-2 py-0.5 rounded-md ${isGain ? "bg-[#00D09C]/10 text-[#00D09C]" : "bg-[#EB5757]/10 text-[#EB5757]"}`}>
-                              {isGain ? `+${stk.changePct.toFixed(2)}%` : `${stk.changePct.toFixed(2)}%`}
+                              {isGain ? `+${(Number(stk.changePct) || 0).toFixed(2)}%` : `${(Number(stk.changePct) || 0).toFixed(2)}%`}
                             </span>
                           </td>
 
@@ -390,18 +395,18 @@ export default function MarketTicker() {
                           <td className="py-3 px-4 text-right font-mono font-bold">
                             <div className="inline-flex items-center gap-1.5">
                               <span className={`text-xs font-extrabold px-2.5 py-1 rounded-lg border ${
-                                stk.pointImpact >= 0 
+                                (Number(stk.pointImpact) || 0) >= 0 
                                   ? "bg-[#00D09C]/10 text-[#00D09C] border-[#00D09C]/30" 
                                   : "bg-[#EB5757]/10 text-[#EB5757] border-[#EB5757]/30"
                               }`}>
-                                {stk.pointImpact >= 0 ? `+${stk.pointImpact.toFixed(2)} pts` : `${stk.pointImpact.toFixed(2)} pts`}
+                                {(Number(stk.pointImpact) || 0) >= 0 ? `+${(Number(stk.pointImpact) || 0).toFixed(2)} pts` : `${(Number(stk.pointImpact) || 0).toFixed(2)} pts`}
                               </span>
                             </div>
                           </td>
 
                           {/* Current Stock Price */}
                           <td className="py-3 px-4 text-right font-bold text-white font-mono">
-                            ₹{stk.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            ₹{(Number(stk.price) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                         </tr>
                       );
@@ -467,10 +472,10 @@ export default function MarketTicker() {
                   </div>
                   <div className="text-right">
                     <span className="text-white font-bold text-sm">
-                      ₹{idx.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ₹{(Number(idx.price) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
-                    <span className={`block text-xs font-bold ${idx.change >= 0 ? "text-[#00D09C]" : "text-[#EB5757]"}`}>
-                      {idx.change > 0 ? `+${idx.change.toFixed(2)}` : idx.change.toFixed(2)} ({idx.change_pct > 0 ? `+${idx.change_pct.toFixed(2)}` : idx.change_pct.toFixed(2)}%)
+                    <span className={`block text-xs font-bold ${(Number(idx.change) || 0) >= 0 ? "text-[#00D09C]" : "text-[#EB5757]"}`}>
+                      {(Number(idx.change) || 0) > 0 ? `+${(Number(idx.change) || 0).toFixed(2)}` : (Number(idx.change) || 0).toFixed(2)} ({(Number(idx.change_pct) || 0) > 0 ? `+${(Number(idx.change_pct) || 0).toFixed(2)}` : (Number(idx.change_pct) || 0).toFixed(2)}%)
                     </span>
                   </div>
                 </div>

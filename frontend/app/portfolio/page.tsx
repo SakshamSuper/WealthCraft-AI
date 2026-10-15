@@ -13,6 +13,7 @@ import {
 import { 
   ResponsiveContainer, BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell 
 } from "recharts";
+import { ensureSession } from "@/lib/auth";
 
 export default function PortfolioPage() {
   const router = useRouter();
@@ -43,11 +44,7 @@ export default function PortfolioPage() {
 
   useEffect(() => {
     setMounted(true);
-    const token = localStorage.getItem("stockify_token");
-    if (!token) {
-      router.push("/");
-      return;
-    }
+    ensureSession();
     loadPortfolioData();
   }, [router]);
 
