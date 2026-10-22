@@ -11,8 +11,8 @@ export const FALLBACK_ASSETS = [
     "aum": 1764237.07,
     "pe_ratio": 20.31,
     "high_52w": 1611.8,
-    "low_52w": 1253.2,
-    "initial_nav": 1303.7,
+    "low_52w": 1120.0,
+    "initial_nav": 1197.8,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -26,9 +26,9 @@ export const FALLBACK_ASSETS = [
     "expense_ratio": 0.0,
     "aum": 1187214.56,
     "pe_ratio": 35.81,
-    "high_52w": 1779.0,
+    "high_52w": 1965.0,
     "low_52w": 1105.0,
-    "initial_nav": 1698.5,
+    "initial_nav": 1917.0,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -42,9 +42,9 @@ export const FALLBACK_ASSETS = [
     "expense_ratio": 0.0,
     "aum": 1172694.64,
     "pe_ratio": 18.25,
-    "high_52w": 1794.0,
-    "low_52w": 1363.55,
-    "initial_nav": 1685.4,
+    "high_52w": 1020.35,
+    "low_52w": 682.0,
+    "initial_nav": 706.95,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -58,9 +58,9 @@ export const FALLBACK_ASSETS = [
     "expense_ratio": 0.0,
     "aum": 1049555.5,
     "pe_ratio": 17.53,
-    "high_52w": 1362.0,
+    "high_52w": 1440.0,
     "low_52w": 980.0,
-    "initial_nav": 1248.6,
+    "initial_nav": 1396.7,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -75,8 +75,8 @@ export const FALLBACK_ASSETS = [
     "aum": 964045.7,
     "pe_ratio": 10.45,
     "high_52w": 912.0,
-    "low_52w": 598.0,
-    "initial_nav": 796.8,
+    "low_52w": 650.0,
+    "initial_nav": 842.0,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -90,9 +90,9 @@ export const FALLBACK_ASSETS = [
     "expense_ratio": 0.0,
     "aum": 803613.42,
     "pe_ratio": 28.5,
-    "high_52w": 4585.0,
-    "low_52w": 3313.0,
-    "initial_nav": 4125.5,
+    "high_52w": 3450.0,
+    "low_52w": 2380.0,
+    "initial_nav": 2501.0,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -122,9 +122,9 @@ export const FALLBACK_ASSETS = [
     "expense_ratio": 0.0,
     "aum": 529187.99,
     "pe_ratio": 27.87,
-    "high_52w": 4440.0,
+    "high_52w": 3950.0,
     "low_52w": 3288.1,
-    "initial_nav": 3685.0,
+    "initial_nav": 3710.0,
     "amc": "NSE / BSE Listed Equities"
   },
   {
@@ -808,11 +808,11 @@ export const FALLBACK_ASSETS = [
     "risk_category": "High",
     "fund_rating": 5,
     "expense_ratio": 0.0005,
-    "aum": 28500.0,
+    "aum": 34500.0,
     "pe_ratio": 22.4,
-    "high_52w": 285.0,
-    "low_52w": 210.0,
-    "initial_nav": 245.5,
+    "high_52w": 262.0,
+    "low_52w": 215.0,
+    "initial_nav": 248.8,
     "amc": "Nippon Life India Asset Management"
   },
   {
@@ -824,11 +824,11 @@ export const FALLBACK_ASSETS = [
     "risk_category": "High",
     "fund_rating": 5,
     "expense_ratio": 0.011,
-    "aum": 28450.0,
+    "aum": 39000.0,
     "pe_ratio": 20.8,
-    "high_52w": 920.0,
-    "low_52w": 710.0,
-    "initial_nav": 839.43,
+    "high_52w": 1180.0,
+    "low_52w": 840.0,
+    "initial_nav": 1063.52,
     "amc": "HDFC Mutual Fund"
   },
   {
@@ -840,11 +840,75 @@ export const FALLBACK_ASSETS = [
     "risk_category": "High",
     "fund_rating": 5,
     "expense_ratio": 0.0068,
-    "aum": 58200.0,
+    "aum": 145000.0,
     "pe_ratio": 24.2,
-    "high_52w": 68.0,
-    "low_52w": 51.0,
-    "initial_nav": 58.7,
+    "high_52w": 96.5,
+    "low_52w": 72.0,
+    "initial_nav": 90.35,
     "amc": "PPFAS Mutual Fund"
+  },
+  {
+    "id": 104,
+    "name": "Quant Active Fund",
+    "ticker": "QUANT_ACT",
+    "category": "Multi Cap",
+    "sector": "Multi Cap Equity",
+    "risk_category": "Very High",
+    "fund_rating": 5,
+    "expense_ratio": 0.0076,
+    "aum": 7501.45,
+    "pe_ratio": 21.5,
+    "high_52w": 740.0,
+    "low_52w": 550.0,
+    "initial_nav": 698.9,
+    "amc": "Quant Mutual Fund"
+  },
+  {
+    "id": 105,
+    "name": "Mirae Asset Large & Midcap Fund",
+    "ticker": "MIRAE_LM",
+    "category": "Large & Mid Cap",
+    "sector": "Large & Mid Cap Equity",
+    "risk_category": "Very High",
+    "fund_rating": 5,
+    "expense_ratio": 0.0065,
+    "aum": 41200.0,
+    "pe_ratio": 23.1,
+    "high_52w": 185.0,
+    "low_52w": 135.0,
+    "initial_nav": 168.22,
+    "amc": "Mirae Asset Mutual Fund"
+  },
+  {
+    "id": 106,
+    "name": "SBI Small Cap Fund",
+    "ticker": "SBI_SMALL",
+    "category": "Small Cap",
+    "sector": "Small Cap Equity",
+    "risk_category": "Very High",
+    "fund_rating": 5,
+    "expense_ratio": 0.0072,
+    "aum": 32500.0,
+    "pe_ratio": 26.4,
+    "high_52w": 215.0,
+    "low_52w": 160.0,
+    "initial_nav": 199.13,
+    "amc": "SBI Mutual Fund"
+  },
+  {
+    "id": 107,
+    "name": "Motilal Oswal Midcap Fund",
+    "ticker": "MOTILAL_MID",
+    "category": "Mid Cap",
+    "sector": "Mid Cap Equity",
+    "risk_category": "Very High",
+    "fund_rating": 5,
+    "expense_ratio": 0.0068,
+    "aum": 19800.0,
+    "pe_ratio": 27.5,
+    "high_52w": 128.0,
+    "low_52w": 88.0,
+    "initial_nav": 118.5,
+    "amc": "Motilal Oswal Mutual Fund"
   }
 ];
