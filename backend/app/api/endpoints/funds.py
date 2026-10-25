@@ -27,12 +27,12 @@ def get_market_indices() -> Any:
         return _indices_cache["data"]
 
     indices_config = [
-        {"name": "NIFTY", "symbol": "^NSEI", "fallback_price": 24187.70, "fallback_change": -50.80, "fallback_pct": -0.21},
-        {"name": "SENSEX", "symbol": "^BSESN", "fallback_price": 77470.11, "fallback_change": -238.41, "fallback_pct": -0.31},
-        {"name": "BANKNIFTY", "symbol": "^NSEBANK", "fallback_price": 57835.35, "fallback_change": -109.65, "fallback_pct": -0.19},
-        {"name": "MIDCPNIFTY", "symbol": "^NSEMDCP50", "fallback_price": 14814.30, "fallback_change": 34.60, "fallback_pct": 0.23},
-        {"name": "FINNIFTY", "symbol": "NIFTY_FIN_SERVICE.NS", "fallback_price": 26531.65, "fallback_change": -18.40, "fallback_pct": -0.07},
-        {"name": "S&P 500", "symbol": "^GSPC", "fallback_price": 5615.35, "fallback_change": 24.15, "fallback_pct": 0.43},
+        {"name": "NIFTY", "symbol": "^NSEI", "fallback_price": 22768.90, "fallback_change": -42.45, "fallback_pct": -0.19},
+        {"name": "SENSEX", "symbol": "^BSESN", "fallback_price": 73584.88, "fallback_change": -730.73, "fallback_pct": -0.98},
+        {"name": "BANKNIFTY", "symbol": "^NSEBANK", "fallback_price": 54941.85, "fallback_change": -868.65, "fallback_pct": -1.56},
+        {"name": "MIDCPNIFTY", "symbol": "^NSEMDCP50", "fallback_price": 16431.85, "fallback_change": -524.45, "fallback_pct": -3.09},
+        {"name": "FINNIFTY", "symbol": "NIFTY_FIN_SERVICE.NS", "fallback_price": 24687.95, "fallback_change": -676.25, "fallback_pct": -2.67},
+        {"name": "S&P 500", "symbol": "^GSPC", "fallback_price": 7757.17, "fallback_change": 38.23, "fallback_pct": 0.49},
     ]
 
     results = []
@@ -41,7 +41,7 @@ def get_market_indices() -> Any:
     for item in indices_config:
         try:
             url = f"https://query1.finance.yahoo.com/v8/finance/chart/{item['symbol']}?interval=1m&range=1d"
-            res = requests.get(url, headers=headers, timeout=0.8)
+            res = requests.get(url, headers=headers, timeout=3.5)
             if res.status_code == 200:
                 meta = res.json()["chart"]["result"][0]["meta"]
                 price = meta.get("regularMarketPrice", item["fallback_price"])

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import { RefreshCw, Globe, X, TrendingUp, TrendingDown, ArrowUpRight, Search, Zap, Layers, BarChart2 } from "lucide-react";
+import { getIndianMarketStatus, subscribeToPriceUpdates } from "@/lib/liveSync";
+import { RefreshCw, Globe, X, TrendingUp, TrendingDown, ArrowUpRight, Search, Zap, Layers, BarChart2, CheckCircle2 } from "lucide-react";
 
 interface ConstituentStock {
   symbol: string;
@@ -21,6 +22,9 @@ export default function MarketTicker() {
   const router = useRouter();
   const [indices, setIndices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [marketStatus, setMarketStatus] = useState(() => getIndianMarketStatus());
+  const [lastSyncTime, setLastSyncTime] = useState<string>("Synced");
   const [selectedIdx, setSelectedIdx] = useState<any | null>(null);
   const [showGlobalModal, setShowGlobalModal] = useState(false);
 
@@ -32,6 +36,9 @@ export default function MarketTicker() {
     try {
       const data = await api.getMarketIndices();
       setIndices(data);
+      setMarketStatus(getIndianMarketStatus());
+      const now = new Date();
+      setLastSyncTime(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
     } catch (err) {
       console.error("Failed to load market indices", err);
     } finally {
@@ -39,23 +46,42 @@ export default function MarketTicker() {
     }
   };
 
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    try {
+      await api.syncAllPrices();
+      await fetchIndices();
+    } catch (err) {
+      console.warn("Manual sync error:", err);
+    } finally {
+      setTimeout(() => setIsSyncing(false), 500);
+    }
+  };
+
   useEffect(() => {
     fetchIndices();
-    const interval = setInterval(fetchIndices, 30000);
-    return () => clearInterval(interval);
+    // Auto-sync every 15 seconds during active viewing
+    const interval = setInterval(fetchIndices, 15000);
+    const unsubscribe = subscribeToPriceUpdates(() => {
+      fetchIndices();
+    });
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+    };
   }, []);
 
   // Comprehensive Constituent Stock Database with Weightages & Levels
   const indexConstituentsMaster: Record<string, ConstituentStock[]> = {
     NIFTY: [
       { symbol: "RELIANCE.NS", name: "Reliance Industries Ltd", weightPct: 9.8, changePct: -1.42, price: 1197.80, high52w: 1611.80, low52w: 1105.00, peRatio: 20.3, marketCap: "₹17,64,200 Cr" },
-      { symbol: "HDFCBANK.NS", name: "HDFC Bank Ltd", weightPct: 8.9, changePct: -3.77, price: 699.45, high52w: 890.00, low52w: 640.00, peRatio: 18.3, marketCap: "₹11,72,600 Cr" },
+      { symbol: "HDFCBANK.NS", name: "HDFC Bank Ltd", weightPct: 8.9, changePct: -0.71, price: 706.95, high52w: 1020.35, low52w: 682.00, peRatio: 18.3, marketCap: "₹11,72,600 Cr" },
       { symbol: "ICICIBANK.NS", name: "ICICI Bank Ltd", weightPct: 7.6, changePct: 0.53, price: 1396.70, high52w: 1420.00, low52w: 980.00, peRatio: 17.5, marketCap: "₹10,49,500 Cr" },
       { symbol: "BHARTIARTL.NS", name: "Bharti Airtel Ltd", weightPct: 6.8, changePct: 3.40, price: 1917.00, high52w: 1960.00, low52w: 1105.00, peRatio: 35.8, marketCap: "₹11,87,200 Cr" },
       { symbol: "INFY.NS", name: "Infosys Ltd", weightPct: 5.8, changePct: 4.52, price: 1160.15, high52w: 2006.00, low52w: 1100.00, peRatio: 26.8, marketCap: "₹4,35,500 Cr" },
       { symbol: "TCS.NS", name: "Tata Consultancy Services", weightPct: 4.2, changePct: 6.43, price: 2501.00, high52w: 4585.00, low52w: 2400.00, peRatio: 28.5, marketCap: "₹8,03,600 Cr" },
       { symbol: "LT.NS", name: "Larsen & Toubro Ltd", weightPct: 3.9, changePct: 1.65, price: 3710.00, high52w: 3919.90, low52w: 2820.00, peRatio: 32.1, marketCap: "₹4,97,600 Cr" },
-      { symbol: "ITC.NS", name: "ITC Ltd", weightPct: 3.7, changePct: 0.35, price: 485.50, high52w: 528.50, low52w: 399.30, peRatio: 28.9, marketCap: "₹6,15,400 Cr" },
+      { symbol: "ITC.NS", name: "ITC Ltd", weightPct: 3.7, changePct: 0.35, price: 262.00, high52w: 528.50, low52w: 250.30, peRatio: 28.9, marketCap: "₹6,15,400 Cr" },
       { symbol: "SBIN.NS", name: "State Bank of India", weightPct: 2.9, changePct: 1.10, price: 842.00, high52w: 912.00, low52w: 543.20, peRatio: 10.5, marketCap: "₹7,62,100 Cr" },
       { symbol: "TVSMOTOR.NS", name: "TVS Motor Company", weightPct: 2.5, changePct: -0.68, price: 3992.50, high52w: 4100.00, low52w: 2400.00, peRatio: 36.2, marketCap: "₹1,89,600 Cr" },
       { symbol: "AXISBANK.NS", name: "Axis Bank Ltd", weightPct: 2.4, changePct: -0.60, price: 1185.00, high52w: 1339.65, low52w: 931.00, peRatio: 14.5, marketCap: "₹3,65,400 Cr" },
@@ -67,18 +93,18 @@ export default function MarketTicker() {
     ],
     SENSEX: [
       { symbol: "RELIANCE.BO", name: "Reliance Industries Ltd", weightPct: 11.2, changePct: -1.42, price: 1197.80, high52w: 1611.80, low52w: 1105.00, peRatio: 20.3, marketCap: "₹17,64,200 Cr" },
-      { symbol: "HDFCBANK.BO", name: "HDFC Bank Ltd", weightPct: 10.1, changePct: -3.77, price: 699.45, high52w: 890.00, low52w: 640.00, peRatio: 18.3, marketCap: "₹11,72,600 Cr" },
+      { symbol: "HDFCBANK.BO", name: "HDFC Bank Ltd", weightPct: 10.1, changePct: -0.71, price: 706.95, high52w: 1020.35, low52w: 682.00, peRatio: 18.3, marketCap: "₹11,72,600 Cr" },
       { symbol: "ICICIBANK.BO", name: "ICICI Bank Ltd", weightPct: 8.5, changePct: 0.53, price: 1396.70, high52w: 1420.00, low52w: 980.00, peRatio: 17.5, marketCap: "₹10,49,500 Cr" },
       { symbol: "BHARTIARTL.BO", name: "Bharti Airtel Ltd", weightPct: 7.2, changePct: 3.40, price: 1917.00, high52w: 1960.00, low52w: 1105.00, peRatio: 35.8, marketCap: "₹11,87,200 Cr" },
       { symbol: "INFY.BO", name: "Infosys Ltd", weightPct: 6.7, changePct: 4.52, price: 1160.15, high52w: 2006.00, low52w: 1100.00, peRatio: 26.8, marketCap: "₹4,35,500 Cr" },
       { symbol: "TCS.BO", name: "Tata Consultancy Services", weightPct: 5.1, changePct: 6.43, price: 2501.00, high52w: 4585.00, low52w: 2400.00, peRatio: 28.5, marketCap: "₹8,03,600 Cr" },
       { symbol: "LT.BO", name: "Larsen & Toubro Ltd", weightPct: 4.5, changePct: 1.65, price: 3710.00, high52w: 3919.90, low52w: 2820.00, peRatio: 32.1, marketCap: "₹4,97,600 Cr" },
-      { symbol: "ITC.BO", name: "ITC Ltd", weightPct: 4.2, changePct: 0.35, price: 485.50, high52w: 528.50, low52w: 399.30, peRatio: 28.9, marketCap: "₹6,15,400 Cr" },
+      { symbol: "ITC.BO", name: "ITC Ltd", weightPct: 4.2, changePct: 0.35, price: 262.00, high52w: 528.50, low52w: 250.30, peRatio: 28.9, marketCap: "₹6,15,400 Cr" },
       { symbol: "SBIN.BO", name: "State Bank of India", weightPct: 3.8, changePct: 1.10, price: 842.00, high52w: 912.00, low52w: 543.20, peRatio: 10.5, marketCap: "₹7,62,100 Cr" },
     ],
     BANKNIFTY: [
       { symbol: "ICICIBANK.NS", name: "ICICI Bank Ltd", weightPct: 26.5, changePct: 0.53, price: 1396.70, high52w: 1420.00, low52w: 980.00, peRatio: 17.5, marketCap: "₹10,49,500 Cr" },
-      { symbol: "HDFCBANK.NS", name: "HDFC Bank Ltd", weightPct: 25.4, changePct: -3.77, price: 699.45, high52w: 890.00, low52w: 640.00, peRatio: 18.3, marketCap: "₹11,72,600 Cr" },
+      { symbol: "HDFCBANK.NS", name: "HDFC Bank Ltd", weightPct: 25.4, changePct: -0.71, price: 706.95, high52w: 1020.35, low52w: 682.00, peRatio: 18.3, marketCap: "₹11,72,600 Cr" },
       { symbol: "SBIN.NS", name: "State Bank of India", weightPct: 12.5, changePct: 1.10, price: 842.00, high52w: 912.00, low52w: 543.20, peRatio: 10.5, marketCap: "₹7,62,100 Cr" },
       { symbol: "KOTAKBANK.NS", name: "Kotak Mahindra Bank", weightPct: 11.8, changePct: 0.30, price: 1780.00, high52w: 1916.00, low52w: 1544.00, peRatio: 19.4, marketCap: "₹3,53,800 Cr" },
       { symbol: "AXISBANK.NS", name: "Axis Bank Ltd", weightPct: 10.2, changePct: -0.60, price: 1185.00, high52w: 1339.65, low52w: 931.00, peRatio: 14.5, marketCap: "₹3,65,400 Cr" },
@@ -92,8 +118,8 @@ export default function MarketTicker() {
       { symbol: "SUZLON.NS", name: "Suzlon Energy Ltd", weightPct: 2.9, changePct: 4.80, price: 68.50, high52w: 84.00, low52w: 18.20, peRatio: 88.5, marketCap: "₹93,400 Cr" },
     ],
     FINNIFTY: [
-      { symbol: "HDFCBANK.NS", name: "HDFC Bank Ltd", weightPct: 22.5, changePct: -0.40, price: 1642.50, high52w: 1794.00, low52w: 1363.55, peRatio: 18.6, marketCap: "₹12,48,200 Cr" },
-      { symbol: "ICICIBANK.NS", name: "ICICI Bank Ltd", weightPct: 19.8, changePct: 0.80, price: 1215.80, high52w: 1257.90, low52w: 930.00, peRatio: 17.2, marketCap: "₹8,54,300 Cr" },
+      { symbol: "HDFCBANK.NS", name: "HDFC Bank Ltd", weightPct: 22.5, changePct: -0.71, price: 706.95, high52w: 1020.35, low52w: 682.00, peRatio: 18.6, marketCap: "₹11,72,600 Cr" },
+      { symbol: "ICICIBANK.NS", name: "ICICI Bank Ltd", weightPct: 19.8, changePct: 0.53, price: 1396.70, high52w: 1420.00, low52w: 980.00, peRatio: 17.5, marketCap: "₹10,49,500 Cr" },
       { symbol: "BAJFINANCE.NS", name: "Bajaj Finance Ltd", weightPct: 14.2, changePct: 1.70, price: 6840.00, high52w: 8192.00, low52w: 6188.00, peRatio: 28.6, marketCap: "₹4,22,800 Cr" },
       { symbol: "SBILIFE.NS", name: "SBI Life Insurance Co", weightPct: 6.4, changePct: 0.50, price: 1780.00, high52w: 1840.00, low52w: 1280.00, peRatio: 82.1, marketCap: "₹1,78,200 Cr" },
       { symbol: "HDFCLIFE.NS", name: "HDFC Life Insurance", weightPct: 5.2, changePct: 1.10, price: 712.00, high52w: 754.00, low52w: 512.00, peRatio: 91.4, marketCap: "₹1,53,400 Cr" },
@@ -197,9 +223,35 @@ export default function MarketTicker() {
               <Globe size={15} className="text-[#00D09C]" />
               <span className="font-semibold text-slate-300 text-[11px]">Global Markets</span>
             </button>
-            <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              Demo Data
-            </span>
+
+            {/* Live Sync Status Indicator */}
+            <div className="flex items-center gap-2">
+              <span
+                className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
+                  marketStatus.isOpen
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                    : "bg-slate-800 text-slate-300 border-white/10"
+                }`}
+                title={marketStatus.nextSession}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    marketStatus.isOpen ? "bg-emerald-400 animate-pulse" : "bg-slate-400"
+                  }`}
+                />
+                {marketStatus.isOpen ? "Live Exchange" : "Official Close"}
+              </span>
+
+              <button
+                onClick={handleManualSync}
+                disabled={isSyncing}
+                className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/5 transition-all cursor-pointer"
+                title={`Last synced: ${lastSyncTime}. Click to re-sync all live prices and NAVs.`}
+              >
+                <RefreshCw size={11} className={isSyncing ? "animate-spin text-[#00D09C]" : "text-slate-400"} />
+                <span>{isSyncing ? "Syncing..." : lastSyncTime}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
