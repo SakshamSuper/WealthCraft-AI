@@ -1,6 +1,7 @@
 import { FALLBACK_ASSETS } from "./fallbackAssets";
-import { filterMarketMovers, TRENDING_SECTORS } from "./marketData";
+import { filterMarketMovers, TRENDING_SECTORS, TOP_GAINERS, TOP_LOSERS, TOP_VOLUME_SHOCKERS } from "./marketData";
 import { getLiveNavSync, fetchLiveAMFINav, getIndianMarketStatus, syncAllMutualFunds } from "./liveSync";
+import { generateAssetTimeSeries, ChartTimeframe, TimeSeriesResult } from "./historicalData";
 
 /**
  * Resolve the backend API base URL:
@@ -31,6 +32,15 @@ const BASE_URL = getBaseUrl();
  * without making any network requests (prevents 404 floods on static hosting).
  */
 const HAS_BACKEND = BASE_URL !== "";
+
+function absHash(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
 
 const getHeaders = () => {
   const headers: Record<string, string> = {
@@ -490,7 +500,41 @@ export const api = {
   },
 
   async getFundDetails(id: number) {
-    const asset: any = FALLBACK_ASSETS.find((a) => a.id === id) || FALLBACK_ASSETS[0];
+    // 1. Try finding in FALLBACK_ASSETS
+    let asset: any = FALLBACK_ASSETS.find((a) => a.id === id);
+
+    // 2. If not found by numeric ID, check movers & constituents
+    if (!asset) {
+      const allMovers = [...TOP_GAINERS, ...TOP_LOSERS, ...TOP_VOLUME_SHOCKERS];
+      const match = allMovers.find((m) => {
+        const hashId = (absHash(m.symbol) % 100000000) + 10000000;
+        return hashId === id;
+      });
+      if (match) {
+        const sym = match.symbol.replace(/\.NS$/i, "");
+        asset = {
+          id,
+          name: match.name,
+          ticker: match.symbol,
+          category: "Listed Stock",
+          sector: match.index === "NIFTY 50" ? "Large Cap Equities" : "Mid/Large Cap Equities",
+          risk_category: "High",
+          fund_rating: 5,
+          expense_ratio: 0.0,
+          aum: Math.round(match.volume * match.price * 0.05),
+          pe_ratio: 24.5,
+          high_52w: +(match.price * 1.22).toFixed(2),
+          low_52w: +(match.price * 0.74).toFixed(2),
+          initial_nav: match.price,
+          amc: `NSE: ${sym}`,
+        };
+      }
+    }
+
+    if (!asset) {
+      asset = FALLBACK_ASSETS[0];
+    }
+
     const liveAsset = { ...asset };
     if (asset?.amfi_code) {
       liveAsset.initial_nav = getLiveNavSync(asset.amfi_code, asset.initial_nav);
@@ -508,20 +552,26 @@ export const api = {
     return this.getFundDetails(id);
   },
 
-  async getFundNAVHistory(id: number) {
-    const asset: any = FALLBACK_ASSETS.find((a) => a.id === id) || FALLBACK_ASSETS[0];
+  async getFundTimeSeries(id: number, timeframe: ChartTimeframe = "1Y"): Promise<TimeSeriesResult> {
+    const asset = await this.getFundDetails(id);
+    return generateAssetTimeSeries(asset, timeframe);
+  },
 
-    // Live AMFI daily historical data if available
-    if (asset?.amfi_code) {
+  async getFundNAVHistory(id: number, timeframe: ChartTimeframe = "1Y") {
+    const asset: any = await this.getFundDetails(id);
+
+    // Live AMFI daily historical data if available for mutual funds in 1M timeframe
+    if (asset?.amfi_code && (timeframe === "1M" || timeframe === "1W")) {
       try {
         const res = await fetch(`https://api.mfapi.in/mf/${asset.amfi_code}`);
         if (res.ok) {
           const json = await res.json();
           if (json && Array.isArray(json.data) && json.data.length > 0) {
-            const points = json.data.slice(0, 30).reverse().map((p: any) => {
+            const limit = timeframe === "1W" ? 7 : 30;
+            const points = json.data.slice(0, limit).reverse().map((p: any) => {
               const [day, month, year] = p.date.split("-");
               const val = parseFloat(p.nav);
-              return { date: `${year}-${month}-${day}`, nav: val, NAV: val };
+              return { date: `${year}-${month}-${day}`, nav: val, NAV: val, close: val, open: val, high: val, low: val };
             });
             if (points.length > 0) return points;
           }
@@ -531,90 +581,139 @@ export const api = {
       }
     }
 
-    const buildRollingHistory = () => {
-      const base = Number(asset.initial_nav) || 1000;
-      const now = new Date();
-      const points = 12;
-      const history = [];
-      for (let i = points - 1; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, Math.min(now.getDate(), 20));
-        const dateStr = d.toISOString().split("T")[0];
-        const progress = (points - 1 - i) / (points - 1);
-        const cycle = Math.sin(progress * Math.PI * 2) * 0.04;
-        const trend = 0.82 + progress * 0.18 + cycle;
-        const val = +(base * trend).toFixed(2);
-        history.push({ date: dateStr, nav: val, NAV: val });
-      }
-      return history;
-    };
-
-    if (!HAS_BACKEND) return buildRollingHistory();
-    try {
-      const res = await fetch(`${BASE_URL}/funds/${id}/nav-history`, { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
-      }
-    } catch (e) {
-      // fallthrough
-    }
-    return buildRollingHistory();
+    const series = generateAssetTimeSeries(asset, timeframe);
+    return series.points;
   },
-  async getNAVHistory(id: number) {
-    return this.getFundNAVHistory(id);
+  async getNAVHistory(id: number, timeframe: ChartTimeframe = "1Y") {
+    return this.getFundNAVHistory(id, timeframe);
   },
 
   async getFundForecast(id: number) {
-    const buildRollingForecast = () => {
-      const asset = FALLBACK_ASSETS.find((a) => a.id === id) || FALLBACK_ASSETS[0];
-      const curPrice = Number(asset.initial_nav) || 1000;
+    const buildRollingForecast = async () => {
+      const asset = await this.getFundDetails(id);
+      const curPrice = Number(asset.initial_nav || asset.price || 1000);
       const now = new Date();
       const dates = [1, 2, 3, 6, 12].map((m) => {
         const d = new Date(now.getFullYear(), now.getMonth() + m, 1);
         return d.toISOString().split("T")[0];
       });
 
+      const chartData = [
+        { date: "Current", Predicted: curPrice, Upper: curPrice, Lower: curPrice },
+        { date: "+1M", Predicted: Math.round(curPrice * 1.025), Upper: Math.round(curPrice * 1.05), Lower: Math.round(curPrice * 0.99) },
+        { date: "+3M", Predicted: Math.round(curPrice * 1.065), Upper: Math.round(curPrice * 1.11), Lower: Math.round(curPrice * 0.98) },
+        { date: "+6M", Predicted: Math.round(curPrice * 1.12), Upper: Math.round(curPrice * 1.19), Lower: Math.round(curPrice * 0.96) },
+        { date: "+9M", Predicted: Math.round(curPrice * 1.155), Upper: Math.round(curPrice * 1.25), Lower: Math.round(curPrice * 0.94) },
+        { date: "+12M", Predicted: Math.round(curPrice * 1.182), Upper: Math.round(curPrice * 1.345), Lower: Math.round(curPrice * 0.915) },
+      ];
+
       return {
-        target_price_1y: Math.round(curPrice * 1.18),
-        target_price_high: Math.round(curPrice * 1.35),
-        target_price_low: Math.round(curPrice * 0.92),
-        cagr: 18.5,
-        confidence: 85.0,
+        target_price_1y: Math.round(curPrice * 1.182),
+        target_price_high: Math.round(curPrice * 1.345),
+        target_price_low: Math.round(curPrice * 0.915),
+        cagr: 18.2,
+        confidence: 86.5,
+        analyst_rating: "Strong Buy",
+        total_analysts: 36,
+        buy_pct: 78,
+        hold_pct: 16,
+        sell_pct: 6,
+        return_1m: 2.5,
+        return_3m: 6.5,
+        return_6m: 12.0,
+        return_1y: 18.2,
+        return_3y_cagr: 24.8,
         dates,
+        chartData,
         nav: dates.map((_, i) => Math.round(curPrice * (1.04 + i * 0.035))),
         lower_bound: dates.map((_, i) => Math.round(curPrice * (0.97 - i * 0.012))),
         upper_bound: dates.map((_, i) => Math.round(curPrice * (1.09 + i * 0.065))),
       };
     };
 
-    if (!HAS_BACKEND) return buildRollingForecast();
+    if (!HAS_BACKEND) return await buildRollingForecast();
     try {
       const res = await fetch(`${BASE_URL}/funds/${id}/forecast`, { headers: getHeaders() });
       if (res.ok) return await res.json();
     } catch (e) {
       // fallthrough
     }
-    return buildRollingForecast();
+    return await buildRollingForecast();
   },
 
   async getFundPeers(id: number) {
-    if (!HAS_BACKEND) return [
-      { name: "HDFC Bank Ltd", ticker: "HDFCBANK.NS", price: 1685.40, pe_ratio: 18.6, aum: 1172694.64, change_1y: 12.4 },
-      { name: "ICICI Bank Ltd", ticker: "ICICIBANK.NS", price: 1248.60, pe_ratio: 17.2, aum: 1049555.5, change_1y: 24.2 },
-      { name: "Infosys Ltd", ticker: "INFY.NS", price: 1894.20, pe_ratio: 26.8, aum: 764100, change_1y: 9.8 },
-    ];
-    try {
-      const res = await fetch(`${BASE_URL}/funds/${id}/peers`, { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) return data;
-      }
-    } catch (e) {
-      // fallthrough
+    const asset = await this.getFundDetails(id);
+    const sym = (asset?.ticker || asset?.symbol || "").toUpperCase();
+    const name = (asset?.name || "").toLowerCase();
+    const cat = (asset?.category || "").toLowerCase();
+
+    // Auto sector
+    if (sym.includes("TVS") || sym.includes("M&M") || sym.includes("TATA") || name.includes("motor") || name.includes("auto")) {
+      return [
+        { name: "TVS Motor Company", ticker: "TVSMOTOR.NS", price: 3992.50, pe_ratio: 42.8, aum: 189500, change_1y: 48.5, view: "STRONG BUY" },
+        { name: "Mahindra & Mahindra", ticker: "M&M.NS", price: 3145.20, pe_ratio: 28.4, aum: 391200, change_1y: 52.4, view: "BUY" },
+        { name: "Tata Motors Ltd", ticker: "TATAMOTORS.NS", price: 924.50, pe_ratio: 11.2, aum: 307500, change_1y: 34.8, view: "BUY" },
+        { name: "Bajaj Auto Ltd", ticker: "BAJAJ-AUTO.NS", price: 10420.00, pe_ratio: 34.6, aum: 295000, change_1y: 62.1, view: "BUY" },
+        { name: "Maruti Suzuki India", ticker: "MARUTI.NS", price: 12850.00, pe_ratio: 26.5, aum: 403000, change_1y: 22.0, view: "HOLD" },
+      ];
     }
+
+    // Defense & Aerospace
+    if (sym.includes("BEL") || sym.includes("HAL") || name.includes("electronics") || name.includes("aeronautics")) {
+      return [
+        { name: "Bharat Electronics Ltd", ticker: "BEL.NS", price: 312.45, pe_ratio: 46.2, aum: 228400, change_1y: 92.4, view: "STRONG BUY" },
+        { name: "Hindustan Aeronautics Ltd", ticker: "HAL.NS", price: 4581.70, pe_ratio: 38.5, aum: 306200, change_1y: 118.2, view: "STRONG BUY" },
+        { name: "Mazagon Dock Shipbuilders", ticker: "MAZDOCK.NS", price: 4210.00, pe_ratio: 39.1, aum: 84900, change_1y: 145.0, view: "BUY" },
+        { name: "Bharat Dynamics Ltd", ticker: "BDL.NS", price: 1180.50, pe_ratio: 54.0, aum: 43200, change_1y: 68.4, view: "HOLD" },
+      ];
+    }
+
+    // NBFC & Financials
+    if (sym.includes("MUTHOOT") || sym.includes("SHRIRAM") || sym.includes("BAJAJFIN") || name.includes("finance")) {
+      return [
+        { name: "Muthoot Finance", ticker: "MUTHOOTFIN.NS", price: 3079.00, pe_ratio: 19.8, aum: 123500, change_1y: 44.2, view: "BUY" },
+        { name: "Shriram Finance", ticker: "SHRIRAMFIN.NS", price: 1061.50, pe_ratio: 15.2, aum: 142000, change_1y: 38.5, view: "BUY" },
+        { name: "Bajaj Finance Ltd", ticker: "BAJFINANCE.NS", price: 7420.00, pe_ratio: 28.6, aum: 458000, change_1y: 18.2, view: "BUY" },
+        { name: "Cholamandalam Inv & Fin", ticker: "CHOLAFIN.NS", price: 1485.00, pe_ratio: 31.4, aum: 124800, change_1y: 32.6, view: "HOLD" },
+      ];
+    }
+
+    // IT & Software
+    if (sym.includes("TECHM") || sym.includes("TCS") || sym.includes("INFY") || name.includes("technology") || name.includes("tata consultancy")) {
+      return [
+        { name: "Tata Consultancy Services", ticker: "TCS.NS", price: 2501.00, pe_ratio: 28.5, aum: 803613, change_1y: 14.2, view: "BUY" },
+        { name: "Infosys Ltd", ticker: "INFY.NS", price: 1894.20, pe_ratio: 26.8, aum: 764100, change_1y: 18.5, view: "BUY" },
+        { name: "Tech Mahindra Ltd", ticker: "TECHM.NS", price: 1580.40, pe_ratio: 32.1, aum: 154200, change_1y: 28.6, view: "BUY" },
+        { name: "HCL Technologies Ltd", ticker: "HCLTECH.NS", price: 1785.00, pe_ratio: 25.2, aum: 484000, change_1y: 22.4, view: "BUY" },
+      ];
+    }
+
+    // Banking
+    if (sym.includes("BANK") || sym.includes("SBIN") || name.includes("bank")) {
+      return [
+        { name: "HDFC Bank Ltd", ticker: "HDFCBANK.NS", price: 706.95, pe_ratio: 18.25, aum: 1172694, change_1y: 16.4, view: "BUY" },
+        { name: "ICICI Bank Ltd", ticker: "ICICIBANK.NS", price: 1396.70, pe_ratio: 17.53, aum: 1049555, change_1y: 24.2, view: "STRONG BUY" },
+        { name: "State Bank of India", ticker: "SBIN.NS", price: 842.00, pe_ratio: 10.45, aum: 964045, change_1y: 31.0, view: "BUY" },
+        { name: "IndusInd Bank Ltd", ticker: "INDUSINDBK.NS", price: 1342.15, pe_ratio: 12.80, aum: 104200, change_1y: 14.8, view: "HOLD" },
+      ];
+    }
+
+    // Mutual Funds
+    if (cat.includes("fund") || cat.includes("large") || cat.includes("flexi") || cat.includes("small")) {
+      return [
+        { name: "Parag Parikh Flexi Cap Fund", ticker: "PPFCF", price: 84.50, pe_ratio: 22.4, aum: 74200, change_1y: 28.4, view: "5 STAR" },
+        { name: "HDFC Top 100 Fund", ticker: "HDFCTOP100", price: 1120.40, pe_ratio: 20.8, aum: 38400, change_1y: 24.8, view: "5 STAR" },
+        { name: "Quant Active Fund", ticker: "QUANT_ACT", price: 685.20, pe_ratio: 24.5, aum: 10800, change_1y: 38.2, view: "5 STAR" },
+        { name: "Mirae Asset Large & Midcap", ticker: "MIRAE_LM", price: 168.40, pe_ratio: 23.1, aum: 39500, change_1y: 26.5, view: "4 STAR" },
+      ];
+    }
+
+    // General Large Cap Equities
     return [
-      { name: "HDFC Bank Ltd", ticker: "HDFCBANK.NS", price: 1685.40, pe_ratio: 18.6, aum: 1172694.64, change_1y: 12.4 },
-      { name: "ICICI Bank Ltd", ticker: "ICICIBANK.NS", price: 1248.60, pe_ratio: 17.2, aum: 1049555.5, change_1y: 24.2 },
+      { name: "Reliance Industries", ticker: "RELIANCE.NS", price: 1197.80, pe_ratio: 20.31, aum: 1764237, change_1y: 18.5, view: "BUY" },
+      { name: "Bharti Airtel", ticker: "BHARTIARTL.NS", price: 1917.00, pe_ratio: 35.81, aum: 1187214, change_1y: 42.0, view: "STRONG BUY" },
+      { name: "HDFC Bank", ticker: "HDFCBANK.NS", price: 706.95, pe_ratio: 18.25, aum: 1172694, change_1y: 16.4, view: "BUY" },
+      { name: "ICICI Bank", ticker: "ICICIBANK.NS", price: 1396.70, pe_ratio: 17.53, aum: 1049555, change_1y: 24.2, view: "STRONG BUY" },
     ];
   },
 

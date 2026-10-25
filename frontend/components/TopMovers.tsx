@@ -219,6 +219,9 @@ export default function TopMovers() {
                           risk_category: "High",
                           ticker: symbolStr,
                           initial_nav: st.price,
+                          price: st.price,
+                          high_52w: +(st.price * 1.22).toFixed(2),
+                          low_52w: +(st.price * 0.74).toFixed(2),
                         })
                       }
                       className="hover:bg-[#20242B] transition-colors cursor-pointer group"
