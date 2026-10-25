@@ -1,0 +1,794 @@
+{
+  "SHRIRAMFIN.NS": {
+    "price": 865,
+    "prev": 900.9,
+    "chg": -35.9,
+    "pct": -3.98,
+    "high_52w": 1153.7,
+    "low_52w": 710.25,
+    "currency": "INR"
+  },
+  "TVSMOTOR.NS": {
+    "price": 3980.2,
+    "prev": 3974,
+    "chg": 6.2,
+    "pct": 0.16,
+    "high_52w": 4484.5,
+    "low_52w": 3228,
+    "currency": "INR"
+  },
+  "MUTHOOTFIN.NS": {
+    "price": 2373,
+    "prev": 2415,
+    "chg": -42,
+    "pct": -1.74,
+    "high_52w": 4149.5,
+    "low_52w": 2331.9,
+    "currency": "INR"
+  },
+  "HAL.NS": {
+    "price": 4725,
+    "prev": 4875,
+    "chg": -150,
+    "pct": -3.08,
+    "high_52w": 5149.9,
+    "low_52w": 3479.1,
+    "currency": "INR"
+  },
+  "BAJAJFINSV.NS": {
+    "price": 1655,
+    "prev": 1678,
+    "chg": -23,
+    "pct": -1.37,
+    "high_52w": 2188.7,
+    "low_52w": 1597,
+    "currency": "INR"
+  },
+  "BHARTIARTL.NS": {
+    "price": 1892.1,
+    "prev": 1895,
+    "chg": -2.9,
+    "pct": -0.15,
+    "high_52w": 2174.5,
+    "low_52w": 1726.3,
+    "currency": "INR"
+  },
+  "ICICIBANK.NS": {
+    "price": 1394.2,
+    "prev": 1398.5,
+    "chg": -4.3,
+    "pct": -0.31,
+    "high_52w": 1480,
+    "low_52w": 1187.6,
+    "currency": "INR"
+  },
+  "RELIANCE.NS": {
+    "price": 1190,
+    "prev": 1184.5,
+    "chg": 5.5,
+    "pct": 0.46,
+    "high_52w": 1611.8,
+    "low_52w": 1152.2,
+    "currency": "INR"
+  },
+  "M&M.NS": {
+    "price": 2861.2,
+    "prev": 2864.1,
+    "chg": -2.9,
+    "pct": -0.1,
+    "high_52w": 3839.9,
+    "low_52w": 2744.3,
+    "currency": "INR"
+  },
+  "BEL.NS": {
+    "price": 362,
+    "prev": 364.5,
+    "chg": -2.5,
+    "pct": -0.69,
+    "high_52w": 473.45,
+    "low_52w": 354.55,
+    "currency": "INR"
+  },
+  "INFY.NS": {
+    "price": 1153.8,
+    "prev": 1153.35,
+    "chg": 0.45,
+    "pct": 0.04,
+    "high_52w": 1728,
+    "low_52w": 980.4,
+    "currency": "INR"
+  },
+  "HDFCBANK.NS": {
+    "price": 692.8,
+    "prev": 694.05,
+    "chg": -1.25,
+    "pct": -0.18,
+    "high_52w": 1017.5,
+    "low_52w": 681.9,
+    "currency": "INR"
+  },
+  "SBIN.NS": {
+    "price": 958.6,
+    "prev": 970,
+    "chg": -11.4,
+    "pct": -1.18,
+    "high_52w": 1234.7,
+    "low_52w": 906,
+    "currency": "INR"
+  },
+  "HINDUNILVR.NS": {
+    "price": 1814.7,
+    "prev": 1828.3,
+    "chg": -13.6,
+    "pct": -0.74,
+    "high_52w": 2526,
+    "low_52w": 1781.1,
+    "currency": "INR"
+  },
+  "LT.NS": {
+    "price": 3647,
+    "prev": 3638.3,
+    "chg": 8.7,
+    "pct": 0.24,
+    "high_52w": 4440,
+    "low_52w": 3288.1,
+    "currency": "INR"
+  },
+  "ITC.NS": {
+    "price": 257.9,
+    "prev": 258.9,
+    "chg": -1,
+    "pct": -0.39,
+    "high_52w": 426.4,
+    "low_52w": 253.15,
+    "currency": "INR"
+  },
+  "KOTAKBANK.NS": {
+    "price": 430.5,
+    "prev": 437,
+    "chg": -6.5,
+    "pct": -1.49,
+    "high_52w": 453.1,
+    "low_52w": 345.5,
+    "currency": "INR"
+  },
+  "TCS.NS": {
+    "price": 2530,
+    "prev": 2506.9,
+    "chg": 23.1,
+    "pct": 0.92,
+    "high_52w": 3350,
+    "low_52w": 1976.8,
+    "currency": "INR"
+  },
+  "AXISBANK.NS": {
+    "price": 1217.5,
+    "prev": 1212,
+    "chg": 5.5,
+    "pct": 0.45,
+    "high_52w": 1418.3,
+    "low_52w": 1150.3,
+    "currency": "INR"
+  },
+  "ADANIPORTS.NS": {
+    "price": 1702.7,
+    "prev": 1750,
+    "chg": -47.3,
+    "pct": -2.7,
+    "high_52w": 1891.1,
+    "low_52w": 1292,
+    "currency": "INR"
+  },
+  "MARUTI.NS": {
+    "price": 11230,
+    "prev": 11170,
+    "chg": 60,
+    "pct": 0.54,
+    "high_52w": 17370,
+    "low_52w": 10985,
+    "currency": "INR"
+  },
+  "BAJFINANCE.NS": {
+    "price": 928.95,
+    "prev": 942.1,
+    "chg": -13.15,
+    "pct": -1.4,
+    "high_52w": 1176.4,
+    "low_52w": 787.9,
+    "currency": "INR"
+  },
+  "ASIANPAINT.NS": {
+    "price": 2307,
+    "prev": 2284.8,
+    "chg": 22.2,
+    "pct": 0.97,
+    "high_52w": 2985.7,
+    "low_52w": 2115,
+    "currency": "INR"
+  },
+  "COALINDIA.NS": {
+    "price": 397.45,
+    "prev": 402.55,
+    "chg": -5.1,
+    "pct": -1.27,
+    "high_52w": 491.25,
+    "low_52w": 369.6,
+    "currency": "INR"
+  },
+  "NTPC.NS": {
+    "price": 298,
+    "prev": 302.6,
+    "chg": -4.6,
+    "pct": -1.52,
+    "high_52w": 414.4,
+    "low_52w": 292.05,
+    "currency": "INR"
+  },
+  "SUNPHARMA.NS": {
+    "price": 1748,
+    "prev": 1758,
+    "chg": -10,
+    "pct": -0.57,
+    "high_52w": 2046.9,
+    "low_52w": 1583.7,
+    "currency": "INR"
+  },
+  "ADANIENT.NS": {
+    "price": 2477,
+    "prev": 2550,
+    "chg": -73,
+    "pct": -2.86,
+    "high_52w": 3245,
+    "low_52w": 1753,
+    "currency": "INR"
+  },
+  "TITAN.NS": {
+    "price": 4299.7,
+    "prev": 4350,
+    "chg": -50.3,
+    "pct": -1.16,
+    "high_52w": 5186.7,
+    "low_52w": 3667.3,
+    "currency": "INR"
+  },
+  "POWERGRID.NS": {
+    "price": 247.4,
+    "prev": 248.4,
+    "chg": -1,
+    "pct": -0.4,
+    "high_52w": 324.95,
+    "low_52w": 242.3,
+    "currency": "INR"
+  },
+  "BATAINDIA.NS": {
+    "price": 635,
+    "prev": 636.5,
+    "chg": -1.5,
+    "pct": -0.24,
+    "high_52w": 1195,
+    "low_52w": 599.6,
+    "currency": "INR"
+  },
+  "JIOFIN.NS": {
+    "price": 205.03,
+    "prev": 210.8,
+    "chg": -5.77,
+    "pct": -2.74,
+    "high_52w": 316.85,
+    "low_52w": 202.51,
+    "currency": "INR"
+  },
+  "DMART.NS": {
+    "price": 3157.7,
+    "prev": 3166,
+    "chg": -8.3,
+    "pct": -0.26,
+    "high_52w": 4644,
+    "low_52w": 3102.3,
+    "currency": "INR"
+  },
+  "METROBRAND.NS": {
+    "price": 818.1,
+    "prev": 854.95,
+    "chg": -36.85,
+    "pct": -4.31,
+    "high_52w": 1224.5,
+    "low_52w": 807,
+    "currency": "INR"
+  },
+  "JSWSTEEL.NS": {
+    "price": 1185.5,
+    "prev": 1220,
+    "chg": -34.5,
+    "pct": -2.83,
+    "high_52w": 1351,
+    "low_52w": 1073.2,
+    "currency": "INR"
+  },
+  "INDUSINDBK.NS": {
+    "price": 835,
+    "prev": 850.5,
+    "chg": -15.5,
+    "pct": -1.82,
+    "high_52w": 1077.85,
+    "low_52w": 750.5,
+    "currency": "INR"
+  },
+  "TRENT.NS": {
+    "price": 2727.5,
+    "prev": 2775.8,
+    "chg": -48.3,
+    "pct": -1.74,
+    "high_52w": 4831.7,
+    "low_52w": 2183.667,
+    "currency": "INR"
+  },
+  "NESTLEIND.NS": {
+    "price": 1175,
+    "prev": 1189.9,
+    "chg": -14.9,
+    "pct": -1.25,
+    "high_52w": 1553,
+    "low_52w": 1156.2,
+    "currency": "INR"
+  },
+  "TATASTEEL.NS": {
+    "price": 167.67,
+    "prev": 172.33,
+    "chg": -4.66,
+    "pct": -2.7,
+    "high_52w": 224.4,
+    "low_52w": 160.06,
+    "currency": "INR"
+  },
+  "TECHM.NS": {
+    "price": 1790,
+    "prev": 1829.1,
+    "chg": -39.1,
+    "pct": -2.14,
+    "high_52w": 1854,
+    "low_52w": 1304.1,
+    "currency": "INR"
+  },
+  "MAZDOCK.NS": {
+    "price": 1860,
+    "prev": 1922.3,
+    "chg": -62.3,
+    "pct": -3.24,
+    "high_52w": 2881.8,
+    "low_52w": 1845,
+    "currency": "INR"
+  },
+  "PERSISTENT.NS": {
+    "price": 5727.5,
+    "prev": 5740.5,
+    "chg": -13,
+    "pct": -0.23,
+    "high_52w": 6599,
+    "low_52w": 4244.5,
+    "currency": "INR"
+  },
+  "HCLTECH.NS": {
+    "price": 1422.2,
+    "prev": 1421.7,
+    "chg": 0.5,
+    "pct": 0.04,
+    "high_52w": 1780.1,
+    "low_52w": 1030,
+    "currency": "INR"
+  },
+  "CHOLAFIN.NS": {
+    "price": 1463.8,
+    "prev": 1530.9,
+    "chg": -67.1,
+    "pct": -4.38,
+    "high_52w": 1952.5,
+    "low_52w": 1299.4,
+    "currency": "INR"
+  },
+  "FEDERALBNK.NS": {
+    "price": 340.9,
+    "prev": 347.8,
+    "chg": -6.9,
+    "pct": -1.98,
+    "high_52w": 371.7,
+    "low_52w": 228.02,
+    "currency": "INR"
+  },
+  "EICHERMOT.NS": {
+    "price": 7066,
+    "prev": 7084.5,
+    "chg": -18.5,
+    "pct": -0.26,
+    "high_52w": 8230,
+    "low_52w": 6442,
+    "currency": "INR"
+  },
+  "HEROMOTOCO.NS": {
+    "price": 5047,
+    "prev": 5128,
+    "chg": -81,
+    "pct": -1.58,
+    "high_52w": 6388.5,
+    "low_52w": 4671.5,
+    "currency": "INR"
+  },
+  "WIPRO.NS": {
+    "price": 189.84,
+    "prev": 190.41,
+    "chg": -0.57,
+    "pct": -0.3,
+    "high_52w": 273.1,
+    "low_52w": 156.79,
+    "currency": "INR"
+  },
+  "IDFCFIRSTB.NS": {
+    "price": 72.3,
+    "prev": 74.89,
+    "chg": -2.59,
+    "pct": -3.46,
+    "high_52w": 89.61,
+    "low_52w": 58.08,
+    "currency": "INR"
+  },
+  "KALYANKJIL.NS": {
+    "price": 512,
+    "prev": 530.4,
+    "chg": -18.4,
+    "pct": -3.47,
+    "high_52w": 648.95,
+    "low_52w": 327.05,
+    "currency": "INR"
+  },
+  "BDL.NS": {
+    "price": 1017.5,
+    "prev": 1052.5,
+    "chg": -35,
+    "pct": -3.33,
+    "high_52w": 1633.4,
+    "low_52w": 1000,
+    "currency": "INR"
+  },
+  "DIXON.NS": {
+    "price": 11191,
+    "prev": 11594,
+    "chg": -403,
+    "pct": -3.48,
+    "high_52w": 15775,
+    "low_52w": 9600,
+    "currency": "INR"
+  },
+  "COCHINSHIP.NS": {
+    "price": 1139.9,
+    "prev": 1163.9,
+    "chg": -24,
+    "pct": -2.06,
+    "high_52w": 1842.8,
+    "low_52w": 1126.7,
+    "currency": "INR"
+  },
+  "TATACONSUM.NS": {
+    "price": 963.9,
+    "prev": 959.8,
+    "chg": 4.1,
+    "pct": 0.43,
+    "high_52w": 1282.7,
+    "low_52w": 945,
+    "currency": "INR"
+  },
+  "GODREJCP.NS": {
+    "price": 856.35,
+    "prev": 860.2,
+    "chg": -3.85,
+    "pct": -0.45,
+    "high_52w": 1273.9,
+    "low_52w": 832.6,
+    "currency": "INR"
+  },
+  "HAVELLS.NS": {
+    "price": 1031,
+    "prev": 1073,
+    "chg": -42,
+    "pct": -3.91,
+    "high_52w": 1516.6,
+    "low_52w": 1002.8,
+    "currency": "INR"
+  },
+  "VBL.NS": {
+    "price": 395.1,
+    "prev": 400.8,
+    "chg": -5.7,
+    "pct": -1.42,
+    "high_52w": 555.8,
+    "low_52w": 381,
+    "currency": "INR"
+  },
+  "BRITANNIA.NS": {
+    "price": 4537.9,
+    "prev": 4625,
+    "chg": -87.1,
+    "pct": -1.88,
+    "high_52w": 6271,
+    "low_52w": 4515,
+    "currency": "INR"
+  },
+  "DABUR.NS": {
+    "price": 363,
+    "prev": 368,
+    "chg": -5,
+    "pct": -1.36,
+    "high_52w": 534,
+    "low_52w": 356.05,
+    "currency": "INR"
+  },
+  "SUZLON.NS": {
+    "price": 37.4,
+    "prev": 38.57,
+    "chg": -1.17,
+    "pct": -3.03,
+    "high_52w": 61.5,
+    "low_52w": 36.31,
+    "currency": "INR"
+  },
+  "POLYCAB.NS": {
+    "price": 7440,
+    "prev": 7671,
+    "chg": -231,
+    "pct": -3.01,
+    "high_52w": 10126,
+    "low_52w": 6663,
+    "currency": "INR"
+  },
+  "IRFC.NS": {
+    "price": 74.45,
+    "prev": 77,
+    "chg": -2.55,
+    "pct": -3.31,
+    "high_52w": 137.17,
+    "low_52w": 73.76,
+    "currency": "INR"
+  },
+  "RVNL.NS": {
+    "price": 181.31,
+    "prev": 187.18,
+    "chg": -5.87,
+    "pct": -3.14,
+    "high_52w": 400.7,
+    "low_52w": 179.49,
+    "currency": "INR"
+  },
+  "IRCTC.NS": {
+    "price": 441.4,
+    "prev": 451.3,
+    "chg": -9.9,
+    "pct": -2.19,
+    "high_52w": 735.75,
+    "low_52w": 437.45,
+    "currency": "INR"
+  },
+  "CGPOWER.NS": {
+    "price": 813.35,
+    "prev": 817.1,
+    "chg": -3.75,
+    "pct": -0.46,
+    "high_52w": 980.9,
+    "low_52w": 525.5,
+    "currency": "INR"
+  },
+  "IREDA.NS": {
+    "price": 100.27,
+    "prev": 102.61,
+    "chg": -2.34,
+    "pct": -2.28,
+    "high_52w": 156.75,
+    "low_52w": 99.13,
+    "currency": "INR"
+  },
+  "DRREDDY.NS": {
+    "price": 1229.5,
+    "prev": 1239,
+    "chg": -9.5,
+    "pct": -0.77,
+    "high_52w": 1414.9,
+    "low_52w": 1101,
+    "currency": "INR"
+  },
+  "CIPLA.NS": {
+    "price": 1338,
+    "prev": 1330.9,
+    "chg": 7.1,
+    "pct": 0.53,
+    "high_52w": 1593.8,
+    "low_52w": 1165.7,
+    "currency": "INR"
+  },
+  "LUPIN.NS": {
+    "price": 1928.9,
+    "prev": 1922,
+    "chg": 6.9,
+    "pct": 0.36,
+    "high_52w": 2529.5,
+    "low_52w": 1892.9,
+    "currency": "INR"
+  },
+  "MANKIND.NS": {
+    "price": 2212.6,
+    "prev": 2275.6,
+    "chg": -63,
+    "pct": -2.77,
+    "high_52w": 2642,
+    "low_52w": 1909.7,
+    "currency": "INR"
+  },
+  "ADANIGREEN.NS": {
+    "price": 1185.1,
+    "prev": 1250,
+    "chg": -64.9,
+    "pct": -5.19,
+    "high_52w": 1631.5,
+    "low_52w": 765,
+    "currency": "INR"
+  },
+  "APOLLOHOSP.NS": {
+    "price": 7730,
+    "prev": 7604.5,
+    "chg": 125.5,
+    "pct": 1.65,
+    "high_52w": 9070.5,
+    "low_52w": 6696.5,
+    "currency": "INR"
+  },
+  "JSWENERGY.NS": {
+    "price": 448.55,
+    "prev": 463.9,
+    "chg": -15.35,
+    "pct": -3.31,
+    "high_52w": 617.35,
+    "low_52w": 427.75,
+    "currency": "INR"
+  },
+  "BPCL.NS": {
+    "price": 281.95,
+    "prev": 286.95,
+    "chg": -5,
+    "pct": -1.74,
+    "high_52w": 391.65,
+    "low_52w": 266.6,
+    "currency": "INR"
+  },
+  "ONGC.NS": {
+    "price": 227.5,
+    "prev": 225,
+    "chg": 2.5,
+    "pct": 1.11,
+    "high_52w": 307.5,
+    "low_52w": 218.53,
+    "currency": "INR"
+  },
+  "IOC.NS": {
+    "price": 129.09,
+    "prev": 130.98,
+    "chg": -1.89,
+    "pct": -1.44,
+    "high_52w": 188.96,
+    "low_52w": 124.92,
+    "currency": "INR"
+  },
+  "TATAPOWER.NS": {
+    "price": 348.1,
+    "prev": 353.5,
+    "chg": -5.4,
+    "pct": -1.53,
+    "high_52w": 464.9,
+    "low_52w": 333.6,
+    "currency": "INR"
+  },
+  "GAIL.NS": {
+    "price": 163.96,
+    "prev": 168.49,
+    "chg": -4.53,
+    "pct": -2.69,
+    "high_52w": 186.87,
+    "low_52w": 134.36,
+    "currency": "INR"
+  },
+  "OIL.NS": {
+    "price": 447.85,
+    "prev": 456.9,
+    "chg": -9.05,
+    "pct": -1.98,
+    "high_52w": 531,
+    "low_52w": 395.6,
+    "currency": "INR"
+  },
+  "VEDL.NS": {
+    "price": 226.5,
+    "prev": 234.85,
+    "chg": -8.35,
+    "pct": -3.56,
+    "high_52w": 795,
+    "low_52w": 223.35,
+    "currency": "INR"
+  },
+  "BSE.NS": {
+    "price": 3230.8,
+    "prev": 3265,
+    "chg": -34.2,
+    "pct": -1.05,
+    "high_52w": 4446.8,
+    "low_52w": 2326.1,
+    "currency": "INR"
+  },
+  "ANGELONE.NS": {
+    "price": 279,
+    "prev": 291.25,
+    "chg": -12.25,
+    "pct": -4.21,
+    "high_52w": 360.45,
+    "low_52w": 208.63,
+    "currency": "INR"
+  },
+  "CDSL.NS": {
+    "price": 1188.5,
+    "prev": 1225,
+    "chg": -36.5,
+    "pct": -2.98,
+    "high_52w": 1673.7,
+    "low_52w": 1116.3,
+    "currency": "INR"
+  },
+  "NMDC.NS": {
+    "price": 66.35,
+    "prev": 68.88,
+    "chg": -2.53,
+    "pct": -3.67,
+    "high_52w": 97.49,
+    "low_52w": 65.15,
+    "currency": "INR"
+  },
+  "JINDALSTEL.NS": {
+    "price": 1015.9,
+    "prev": 1037,
+    "chg": -21.1,
+    "pct": -2.03,
+    "high_52w": 1306.2,
+    "low_52w": 977.1,
+    "currency": "INR"
+  },
+  "MCX.NS": {
+    "price": 3020.3,
+    "prev": 3113.7,
+    "chg": -93.4,
+    "pct": -3,
+    "high_52w": 3481.4,
+    "low_52w": 1762.1,
+    "currency": "INR"
+  },
+  "DEEPAKNTR.NS": {
+    "price": 1446.9,
+    "prev": 1487.4,
+    "chg": -40.5,
+    "pct": -2.72,
+    "high_52w": 1897.9,
+    "low_52w": 1280,
+    "currency": "INR"
+  },
+  "VOLTAS.NS": {
+    "price": 950,
+    "prev": 989.1,
+    "chg": -39.1,
+    "pct": -3.95,
+    "high_52w": 1582.5,
+    "low_52w": 939.2,
+    "currency": "INR"
+  },
+  "HINDALCO.NS": {
+    "price": 869.85,
+    "prev": 885.6,
+    "chg": -15.75,
+    "pct": -1.78,
+    "high_52w": 1176,
+    "low_52w": 770.15,
+    "currency": "INR"
+  }
+}

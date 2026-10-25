@@ -413,7 +413,12 @@ export const api = {
       });
       if (search) {
         const s = search.toLowerCase();
-        list = list.filter((a) => a.name.toLowerCase().includes(s) || (a.ticker && a.ticker.toLowerCase().includes(s)));
+        list = list.filter(
+          (a) =>
+            a.name.toLowerCase().includes(s) ||
+            (a.ticker && a.ticker.toLowerCase().includes(s)) ||
+            (a.symbol && a.symbol.toLowerCase().includes(s))
+        );
       }
       if (category) list = list.filter((a) => a.category.toLowerCase().includes(category.toLowerCase()));
       if (risk) list = list.filter((a) => a.risk_category.toLowerCase() === risk.toLowerCase());
@@ -440,8 +445,16 @@ export const api = {
     });
     if (search) {
       const s = search.toLowerCase();
-      list = list.filter((a) => a.name.toLowerCase().includes(s) || (a.ticker && a.ticker.toLowerCase().includes(s)));
+      list = list.filter(
+        (a) =>
+          a.name.toLowerCase().includes(s) ||
+          (a.ticker && a.ticker.toLowerCase().includes(s)) ||
+          (a.symbol && a.symbol.toLowerCase().includes(s))
+      );
     }
+    if (category) list = list.filter((a) => a.category.toLowerCase().includes(category.toLowerCase()));
+    if (risk) list = list.filter((a) => a.risk_category.toLowerCase() === risk.toLowerCase());
+    if (minRating) list = list.filter((a) => a.fund_rating >= minRating);
     return list;
   },
 
