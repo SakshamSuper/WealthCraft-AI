@@ -60,9 +60,9 @@ export default function TopMovers() {
   const stockLogos: Record<string, { bg: string; text: string; label: string }> = {
     "TVSMOTOR.NS": { bg: "bg-red-600", text: "text-white", label: "TVS" },
     "BEL.NS": { bg: "bg-blue-700", text: "text-white", label: "BEL" },
-    "MUTHOOTFIN.NS": { bg: "bg-[#181B20] border border-red-500/40", text: "text-red-500", label: "MF" },
+    "MUTHOOTFIN.NS": { bg: "bg-red-700", text: "text-white", label: "MF" },
     "SHRIRAMFIN.NS": { bg: "bg-amber-500", text: "text-black", label: "SF" },
-    "HAL.NS": { bg: "bg-cyan-900 border border-cyan-400/30", text: "text-cyan-300", label: "HAL" },
+    "HAL.NS": { bg: "bg-teal-700", text: "text-white", label: "HAL" },
     "M&M.NS": { bg: "bg-red-800", text: "text-white", label: "M&M" },
     "BAJAJFINSV.NS": { bg: "bg-blue-600", text: "text-white", label: "BJF" },
     "ICICIBANK.NS": { bg: "bg-orange-700", text: "text-white", label: "ICICI" },

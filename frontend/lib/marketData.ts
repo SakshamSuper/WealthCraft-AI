@@ -26,6 +26,17 @@ export interface TrendingSector {
 // 1. TOP GAINERS
 export const TOP_GAINERS: StockMover[] = [
   {
+    symbol: "BEL.NS",
+    ticker: "BEL.NS",
+    name: "Bharat Electronics",
+    price: 312.45,
+    change: 14.85,
+    change_pct: 4.99,
+    volume: 34210500,
+    index: "NIFTY 50",
+    sparkline: [297.6, 298.5, 301.0, 300.2, 303.4, 305.8, 308.2, 309.5, 311.0, 312.45],
+  },
+  {
     symbol: "TVSMOTOR.NS",
     ticker: "TVSMOTOR.NS",
     name: "TVS Motor Company",
@@ -37,15 +48,15 @@ export const TOP_GAINERS: StockMover[] = [
     sparkline: [3800, 3820, 3840, 3855, 3890, 3920, 3950, 3970, 3985, 3992.5],
   },
   {
-    symbol: "BEL.NS",
-    ticker: "BEL.NS",
-    name: "Bharat Electronics",
-    price: 312.45,
-    change: 14.85,
-    change_pct: 4.99,
-    volume: 34210500,
-    index: "NIFTY 50",
-    sparkline: [297.6, 298.5, 301.0, 300.2, 303.4, 305.8, 308.2, 309.5, 311.0, 312.45],
+    symbol: "METROBRAND.NS",
+    ticker: "METROBRAND.NS",
+    name: "Metro Brands",
+    price: 1210.50,
+    change: 38.60,
+    change_pct: 3.29,
+    volume: 420900,
+    index: "ALL STOCKS",
+    sparkline: [1172, 1178, 1185, 1182, 1195, 1202, 1208, 1205, 1209, 1210.5],
   },
   {
     symbol: "MUTHOOTFIN.NS",
@@ -70,17 +81,6 @@ export const TOP_GAINERS: StockMover[] = [
     sparkline: [1035, 1038, 1042, 1040, 1048, 1052, 1055, 1053, 1058, 1061.5],
   },
   {
-    symbol: "HAL.NS",
-    ticker: "HAL.NS",
-    name: "Hindustan Aeronautics",
-    price: 4581.70,
-    change: 90.70,
-    change_pct: 2.02,
-    volume: 697566,
-    index: "NIFTY 100",
-    sparkline: [4491, 4505, 4515, 4508, 4530, 4545, 4560, 4552, 4570, 4581.7],
-  },
-  {
     symbol: "M&M.NS",
     ticker: "M&M.NS",
     name: "Mahindra & Mahindra",
@@ -103,15 +103,15 @@ export const TOP_GAINERS: StockMover[] = [
     sparkline: [1861.5, 1868, 1872, 1870, 1882, 1888, 1892, 1890, 1896, 1900.6],
   },
   {
-    symbol: "ICICIBANK.NS",
-    ticker: "ICICIBANK.NS",
-    name: "ICICI Bank",
-    price: 1396.70,
-    change: 22.40,
-    change_pct: 1.63,
-    volume: 18450000,
-    index: "NIFTY 50",
-    sparkline: [1374, 1378, 1382, 1380, 1386, 1390, 1394, 1392, 1395, 1396.7],
+    symbol: "HAL.NS",
+    ticker: "HAL.NS",
+    name: "Hindustan Aeronautics",
+    price: 4581.70,
+    change: 90.70,
+    change_pct: 2.02,
+    volume: 697566,
+    index: "NIFTY 100",
+    sparkline: [4491, 4505, 4515, 4508, 4530, 4545, 4560, 4552, 4570, 4581.7],
   },
   {
     symbol: "BHARTIARTL.NS",
@@ -125,15 +125,15 @@ export const TOP_GAINERS: StockMover[] = [
     sparkline: [1880, 1885, 1892, 1890, 1900, 1905, 1912, 1910, 1915, 1917],
   },
   {
-    symbol: "METROBRAND.NS",
-    ticker: "METROBRAND.NS",
-    name: "Metro Brands",
-    price: 1210.50,
-    change: 38.60,
-    change_pct: 3.29,
-    volume: 420900,
-    index: "ALL STOCKS",
-    sparkline: [1172, 1178, 1185, 1182, 1195, 1202, 1208, 1205, 1209, 1210.5],
+    symbol: "ICICIBANK.NS",
+    ticker: "ICICIBANK.NS",
+    name: "ICICI Bank",
+    price: 1396.70,
+    change: 22.40,
+    change_pct: 1.63,
+    volume: 18450000,
+    index: "NIFTY 50",
+    sparkline: [1374, 1378, 1382, 1380, 1386, 1390, 1394, 1392, 1395, 1396.7],
   },
 ];
 
@@ -387,18 +387,21 @@ export function filterMarketMovers(
   if (filterType === "losers") dataset = TOP_LOSERS;
   if (filterType === "volume_shockers") dataset = TOP_VOLUME_SHOCKERS;
 
+  let filtered = dataset;
   if (indexFilter === "NIFTY 50") {
-    const n50 = dataset.filter((s) => s.index === "NIFTY 50");
-    return n50.length > 0 ? n50 : dataset.slice(0, 5);
+    filtered = dataset.filter((s) => s.index === "NIFTY 50");
+  } else if (indexFilter === "NIFTY 100") {
+    filtered = dataset.filter((s) => s.index === "NIFTY 50" || s.index === "NIFTY 100");
   }
 
-  if (indexFilter === "NIFTY 100") {
-    const n100 = dataset.filter((s) => s.index === "NIFTY 50" || s.index === "NIFTY 100");
-    return n100.length > 0 ? n100 : dataset.slice(0, 5);
+  // Strictly sort movers
+  if (filterType === "gainers") {
+    return [...filtered].sort((a, b) => b.change_pct - a.change_pct);
   }
-
-  // ALL STOCKS
-  return dataset;
+  if (filterType === "losers") {
+    return [...filtered].sort((a, b) => a.change_pct - b.change_pct);
+  }
+  return [...filtered].sort((a, b) => b.volume - a.volume);
 }
 
 // Generate smooth synthetic sparkline points if missing
