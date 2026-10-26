@@ -1,5 +1,6 @@
 import { FALLBACK_ASSETS } from "./fallbackAssets";
 import { filterMarketMovers, TRENDING_SECTORS, TOP_GAINERS, TOP_LOSERS, TOP_VOLUME_SHOCKERS } from "./marketData";
+import { liveMarketEngine } from "./liveMarketEngine";
 import { getLiveNavSync, fetchLiveAMFINav, getIndianMarketStatus, syncAllMutualFunds } from "./liveSync";
 import { generateAssetTimeSeries, ChartTimeframe, TimeSeriesResult } from "./historicalData";
 
@@ -374,7 +375,7 @@ export const api = {
   },
 
   async getTopMovers(filterType: "gainers" | "losers" | "volume_shockers" = "gainers", indexFilter = "NIFTY 100") {
-    if (!HAS_BACKEND) return filterMarketMovers(filterType, indexFilter);
+    if (!HAS_BACKEND) return liveMarketEngine.getTopMovers(filterType, indexFilter);
     try {
       const query = new URLSearchParams({ filter_type: filterType, index_filter: indexFilter });
       const res = await fetch(`${BASE_URL}/funds/top-movers?${query.toString()}`, { headers: getHeaders() });
@@ -385,11 +386,11 @@ export const api = {
     } catch (e) {
       // fallthrough
     }
-    return filterMarketMovers(filterType, indexFilter);
+    return liveMarketEngine.getTopMovers(filterType, indexFilter);
   },
 
   async getTrendingSectors() {
-    if (!HAS_BACKEND) return TRENDING_SECTORS;
+    if (!HAS_BACKEND) return liveMarketEngine.getTrendingSectors();
     try {
       const res = await fetch(`${BASE_URL}/funds/trending-sectors`, { headers: getHeaders() });
       if (res.ok) {
@@ -399,7 +400,7 @@ export const api = {
     } catch (e) {
       // fallthrough
     }
-    return TRENDING_SECTORS;
+    return liveMarketEngine.getTrendingSectors();
   },
 
   async getFunds(search?: string, category?: string, risk?: string, minRating?: number) {

@@ -2,40 +2,64 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { ChevronRight, ChevronDown, Radio, Star, Building2, Home, Briefcase, ShoppingBag, Layers, TrendingUp, TrendingDown } from "lucide-react";
-import { TRENDING_SECTORS } from "@/lib/marketData";
+import { ChevronRight, ChevronDown, Radio, Star, Building2, Home, Briefcase, ShoppingBag, Layers, RefreshCw } from "lucide-react";
+import { liveMarketEngine } from "@/lib/liveMarketEngine";
 
 export default function TrendingSectors() {
   const [sectors, setSectors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<string>(() => liveMarketEngine.getLastUpdatedFormatted());
+
+  const fetchSectors = async () => {
+    try {
+      const data = await api.getTrendingSectors();
+      if (Array.isArray(data) && data.length > 0) {
+        setSectors(data);
+      }
+      setLastUpdate(liveMarketEngine.getLastUpdatedFormatted());
+    } catch (err) {
+      console.error("Failed to load trending sectors", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchSectors = async () => {
-      try {
-        const data = await api.getTrendingSectors();
-        if (Array.isArray(data) && data.length > 0) {
-          setSectors(data);
-        } else {
-          setSectors(TRENDING_SECTORS);
-        }
-      } catch (err) {
-        console.error("Failed to load trending sectors", err);
-        setSectors(TRENDING_SECTORS);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchSectors();
+
+    // Subscribe to live market engine (fires every ~3s)
+    const unsubscribe = liveMarketEngine.subscribe(() => {
+      const updated = liveMarketEngine.getTrendingSectors();
+      setSectors(updated);
+      setLastUpdate(liveMarketEngine.getLastUpdatedFormatted());
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await liveMarketEngine.forceRefresh();
+      const updated = liveMarketEngine.getTrendingSectors();
+      setSectors(updated);
+      setLastUpdate(liveMarketEngine.getLastUpdatedFormatted());
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
 
   const getSectorIcon = (name: string) => {
     if (name.includes("Telecom")) return Radio;
-    if (name.includes("Defense") || name.includes("Rating") || name.includes("Capital")) return Star;
-    if (name.includes("Cement") || name.includes("Building") || name.includes("Bank")) return Building2;
-    if (name.includes("Furniture") || name.includes("Realty") || name.includes("Infra")) return Home;
-    if (name.includes("Leather")) return Briefcase;
-    if (name.includes("Footwear") || name.includes("FMCG") || name.includes("Consumer")) return ShoppingBag;
+    if (name.includes("Defense") || name.includes("Capital")) return Star;
+    if (name.includes("Bank") || name.includes("Financial")) return Building2;
+    if (name.includes("Realty") || name.includes("Infra")) return Home;
+    if (name.includes("Power") || name.includes("Energy")) return Briefcase;
+    if (name.includes("FMCG") || name.includes("Consumer")) return ShoppingBag;
     return Layers;
   };
 
@@ -43,13 +67,25 @@ export default function TrendingSectors() {
 
   return (
     <div className="space-y-4 font-sans">
-      {/* Section Header */}
+      {/* Section Header with Live Status */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
           <Layers size={20} className="text-cyan-400" />
           Sectors trending today
         </h2>
-        <span className="text-[11px] font-semibold text-slate-400">10 NSE Sectors</span>
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+            Live Sector Breadth
+          </span>
+          <button
+            onClick={handleManualRefresh}
+            className="p-1 rounded-lg bg-[#181B20] border border-white/10 hover:border-white/20 text-slate-400 hover:text-white transition-all cursor-pointer"
+            title="Refresh live sectors"
+          >
+            <RefreshCw size={13} className={isRefreshing ? "animate-spin text-cyan-400" : ""} />
+          </button>
+        </div>
       </div>
 
       {/* Main Table Card Surface */}
@@ -68,7 +104,7 @@ export default function TrendingSectors() {
                 <tr>
                   <td colSpan={3} className="py-8 text-center text-slate-400">
                     <div className="inline-block w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin mr-2" />
-                    Loading trending sectors...
+                    Calculating real-time sector breadth...
                   </td>
                 </tr>
               ) : displayedSectors.length === 0 ? (
@@ -83,7 +119,6 @@ export default function TrendingSectors() {
                   const isPositive = (sec.change_pct ?? 0) >= 0;
                   const colorClass = isPositive ? "text-[#00D09C]" : "text-[#EB5757]";
                   
-                  // Defensive fallback for gainers/losers counts
                   const gainers = typeof sec.gainers === "number" ? sec.gainers : (isPositive ? 25 : 8);
                   const losers = typeof sec.losers === "number" ? sec.losers : (isPositive ? 7 : 24);
                   const total = gainers + losers || 1;
@@ -91,7 +126,7 @@ export default function TrendingSectors() {
                   const topStockClean = (sec.top_stock || "").replace(/\.NS$/i, "");
 
                   return (
-                    <tr key={i} className="hover:bg-[#20242B]/60 transition-colors group">
+                    <tr key={sec.sector || i} className="hover:bg-[#20242B]/60 transition-colors group">
                       {/* Sector Name & Icon */}
                       <td className="py-3 px-2">
                         <div className="flex items-center gap-3">
@@ -104,7 +139,7 @@ export default function TrendingSectors() {
                             </span>
                             {topStockClean && (
                               <span className="text-[10px] text-slate-400 font-semibold">
-                                Top: <span className="text-slate-300">{topStockClean}</span>
+                                Top: <span className="text-slate-200">{topStockClean}</span>
                               </span>
                             )}
                           </div>
@@ -128,11 +163,11 @@ export default function TrendingSectors() {
                             title={`${gainers} Gainers (${gainerWidthPct.toFixed(0)}%) • ${losers} Losers (${(100 - gainerWidthPct).toFixed(0)}%)`}
                           >
                             <div
-                              className="h-full bg-[#00D09C] transition-all duration-500"
+                              className="h-full bg-[#00D09C] transition-all duration-500 ease-out"
                               style={{ width: `${gainerWidthPct}%` }}
                             />
                             <div
-                              className="h-full bg-[#EB5757] transition-all duration-500"
+                              className="h-full bg-[#EB5757] transition-all duration-500 ease-out"
                               style={{ width: `${100 - gainerWidthPct}%` }}
                             />
                           </div>
@@ -141,7 +176,7 @@ export default function TrendingSectors() {
 
                       {/* 1D Price Change */}
                       <td className="py-3 px-3 text-right">
-                        <span className={`font-bold text-sm ${colorClass} inline-flex items-center gap-0.5`}>
+                        <span className={`font-mono font-bold text-sm ${colorClass} inline-flex items-center gap-0.5`}>
                           {(Number(sec.change_pct) || 0) > 0 ? `+${(Number(sec.change_pct) || 0).toFixed(2)}%` : `${(Number(sec.change_pct) || 0).toFixed(2)}%`}
                         </span>
                       </td>
@@ -153,16 +188,19 @@ export default function TrendingSectors() {
           </table>
         </div>
 
-        {/* Bottom Expand / Collapse Toggle Link */}
+        {/* Bottom Expand / Collapse Toggle Link & Realtime Badge */}
         <div className="pt-2 border-t border-white/5 flex items-center justify-between">
           <button
             onClick={() => setShowAll(!showAll)}
             className="flex items-center gap-1.5 text-xs font-bold text-[#00D09C] hover:text-[#00D09C]/80 transition-colors cursor-pointer"
           >
-            <span>{showAll ? "Show top 5 sectors" : `See all ${sectors.length || 10} sectors`}</span>
+            <span>{showAll ? "Show top 5 sectors" : `See all ${sectors.length || 12} sectors`}</span>
             {showAll ? <ChevronDown size={14} className="rotate-180 transition-transform" /> : <ChevronRight size={14} />}
           </button>
-          <span className="text-[10px] text-slate-500">Updated realtime</span>
+          <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            <span>Updated realtime • {lastUpdate}</span>
+          </div>
         </div>
       </div>
     </div>

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { api } from "@/lib/api";
-import { ChevronDown, TrendingUp, TrendingDown, Zap } from "lucide-react";
+import { ChevronDown, TrendingUp, TrendingDown, Zap, RefreshCw } from "lucide-react";
 import AssetDetailModal from "@/components/AssetDetailModal";
 import { ensureSparkline } from "@/lib/marketData";
+import { liveMarketEngine } from "@/lib/liveMarketEngine";
 
 export default function TopMovers() {
   const [filterType, setFilterType] = useState<"gainers" | "losers" | "volume_shockers">("gainers");
@@ -12,12 +13,15 @@ export default function TopMovers() {
   const [stocks, setStocks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStock, setSelectedStock] = useState<any | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<string>(() => liveMarketEngine.getLastUpdatedFormatted());
+  const prevPrices = useRef<Record<string, number>>({});
 
   const fetchMovers = async () => {
-    setLoading(true);
     try {
       const data = await api.getTopMovers(filterType, indexFilter);
       setStocks(data);
+      setLastUpdate(liveMarketEngine.getLastUpdatedFormatted());
     } catch (err) {
       console.error("Failed to load top movers", err);
     } finally {
@@ -26,8 +30,32 @@ export default function TopMovers() {
   };
 
   useEffect(() => {
+    setLoading(true);
     fetchMovers();
+
+    // Subscribe to real-time live market updates (fires every ~3s)
+    const unsubscribe = liveMarketEngine.subscribe(() => {
+      const updated = liveMarketEngine.getTopMovers(filterType, indexFilter);
+      setStocks(updated);
+      setLastUpdate(liveMarketEngine.getLastUpdatedFormatted());
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [filterType, indexFilter]);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await liveMarketEngine.forceRefresh();
+      const updated = liveMarketEngine.getTopMovers(filterType, indexFilter);
+      setStocks(updated);
+      setLastUpdate(liveMarketEngine.getLastUpdatedFormatted());
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
 
   // Generate SVG path string from sparkline array
   const generateSparklinePath = (points: number[]) => {
@@ -89,7 +117,6 @@ export default function TopMovers() {
     if (stockLogos[symbol]) return stockLogos[symbol];
     const cleanSym = symbol.replace(/\.NS$/i, "");
     if (stockLogos[`${cleanSym}.NS`]) return stockLogos[`${cleanSym}.NS`];
-    // Dynamic fallback based on ticker hash
     const colors = [
       { bg: "bg-blue-600", text: "text-white" },
       { bg: "bg-indigo-600", text: "text-white" },
@@ -104,7 +131,7 @@ export default function TopMovers() {
 
   return (
     <div className="space-y-4 font-sans">
-      {/* Section Header */}
+      {/* Section Header with Live Stream Beacon */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
           {filterType === "gainers" && <TrendingUp size={20} className="text-[#00D09C]" />}
@@ -112,7 +139,19 @@ export default function TopMovers() {
           {filterType === "volume_shockers" && <Zap size={20} className="text-amber-400" />}
           Top movers today
         </h2>
-        <span className="text-[11px] font-semibold text-slate-400">NSE Live</span>
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            NSE Live Stream
+          </span>
+          <button
+            onClick={handleManualRefresh}
+            className="p-1 rounded-lg bg-[#181B20] border border-white/10 hover:border-white/20 text-slate-400 hover:text-white transition-all cursor-pointer"
+            title="Refresh live quotes"
+          >
+            <RefreshCw size={13} className={isRefreshing ? "animate-spin text-emerald-400" : ""} />
+          </button>
+        </div>
       </div>
 
       {/* Filter Tabs & Index Dropdown Selector */}
@@ -162,7 +201,7 @@ export default function TopMovers() {
           >
             <option value="NIFTY 100">NIFTY 100</option>
             <option value="NIFTY 50">NIFTY 50</option>
-            <option value="ALL STOCKS">ALL STOCKS</option>
+            <option value="ALL STOCKS">ALL STOCKS (1,050+)</option>
           </select>
           <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
         </div>
@@ -185,7 +224,7 @@ export default function TopMovers() {
                 <tr>
                   <td colSpan={4} className="py-8 text-center text-slate-400">
                     <div className="inline-block w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mr-2" />
-                    Loading live market movers...
+                    Connecting to live exchange stream...
                   </td>
                 </tr>
               ) : stocks.length === 0 ? (
@@ -204,9 +243,17 @@ export default function TopMovers() {
                   const logoMeta = getLogoMeta(symbolStr, st.name);
                   const sparklinePoints = ensureSparkline(st.price, st.change, st.sparkline);
 
+                  // Flash animation when recently updated
+                  const isRecentTick = st.lastTickTime && Date.now() - st.lastTickTime < 2400;
+                  const flashBadge = isRecentTick
+                    ? st.lastTickDir === "up"
+                      ? "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40 rounded px-1 transition-all duration-300"
+                      : "bg-rose-500/20 text-rose-300 ring-1 ring-rose-500/40 rounded px-1 transition-all duration-300"
+                    : "";
+
                   return (
                     <tr
-                      key={i}
+                      key={st.symbol || i}
                       onClick={() =>
                         setSelectedStock({
                           id: (absHash(symbolStr) % 100000000) + 10000000,
@@ -248,22 +295,22 @@ export default function TopMovers() {
                       {/* Mini Sparkline Chart */}
                       <td className="py-3.5 px-4 text-center">
                         <div className="flex justify-center">
-                          <svg width="120" height="28" className="overflow-visible">
+                          <svg width={120} height={28} className="overflow-visible">
                             <defs>
-                              <linearGradient id={`grad-${i}-${isPositive ? "up" : "down"}`} x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor={strokeColor} stopOpacity="0.25" />
-                                <stop offset="100%" stopColor={strokeColor} stopOpacity="0.0" />
+                              <linearGradient id={`sparklineGrad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor={strokeColor} stopOpacity={0.25} />
+                                <stop offset="100%" stopColor={strokeColor} stopOpacity={0.0} />
                               </linearGradient>
                             </defs>
                             <path
                               d={generateAreaPath(sparklinePoints)}
-                              fill={`url(#grad-${i}-${isPositive ? "up" : "down"})`}
+                              fill={`url(#sparklineGrad-${i})`}
                             />
                             <path
                               d={generateSparklinePath(sparklinePoints)}
                               fill="none"
                               stroke={strokeColor}
-                              strokeWidth="2"
+                              strokeWidth={1.8}
                               strokeLinecap="round"
                               strokeLinejoin="round"
                             />
@@ -271,31 +318,27 @@ export default function TopMovers() {
                         </div>
                       </td>
 
-                      {/* Market Price & 1D Change */}
+                      {/* Market Price & Change */}
                       <td className="py-3.5 px-5 text-right">
-                        <div className="font-bold text-white text-sm">
-                          ₹{(Number(st.price) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </div>
-                        <div className={`font-semibold ${colorClass} text-xs mt-0.5 flex items-center justify-end gap-1`}>
-                          <span>
-                            {(Number(st.change) || 0) > 0 ? `+${(Number(st.change) || 0).toFixed(2)}` : (Number(st.change) || 0).toFixed(2)}
+                        <div className="flex flex-col items-end">
+                          <span className={`font-mono font-bold text-sm text-white ${flashBadge}`}>
+                            ₹{st.price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
-                          <span>
-                            ({(Number(st.change_pct) || 0) > 0 ? `+` : ""}{(Number(st.change_pct) || 0).toFixed(2)}%)
+                          <span className={`font-mono text-xs font-semibold ${colorClass} flex items-center gap-0.5`}>
+                            {st.change > 0 ? `+${st.change.toFixed(2)}` : st.change.toFixed(2)} ({st.change_pct > 0 ? `+${st.change_pct.toFixed(2)}` : st.change_pct.toFixed(2)}%)
                           </span>
                         </div>
                       </td>
 
-                      {/* Volume & Surge Multiplier */}
+                      {/* Volume */}
                       <td className="py-3.5 px-5 text-right">
-                        <div className="font-bold text-slate-200 text-xs">
-                          {Number(st.volume).toLocaleString("en-IN")}
-                        </div>
+                        <span className="font-mono text-xs text-slate-300">
+                          {st.volume.toLocaleString("en-IN")}
+                        </span>
                         {st.volume_multiple && (
-                          <div className="text-[10px] text-amber-400 font-semibold mt-0.5 inline-flex items-center gap-0.5">
-                            <Zap size={10} />
+                          <span className="block text-[10px] text-amber-400 font-semibold">
                             {st.volume_multiple}
-                          </div>
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -304,6 +347,15 @@ export default function TopMovers() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Footer Real-Time Streaming Status */}
+        <div className="px-5 py-2.5 bg-[#14161B] border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Streaming updates every 3s</span>
+          </div>
+          <span className="font-mono text-slate-500">Last updated: {lastUpdate}</span>
         </div>
       </div>
 
